@@ -17,40 +17,46 @@ export default function SuggestedRecipes({ recipes }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
             <span style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "0.25rem 0.5rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
               <ChefHat style={{ width: "14px", height: "14px" }} />
-              {recipe.difficulty || "Medium"}
+              Medium
             </span>
             <span style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "0.25rem 0.5rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
               <Clock style={{ width: "14px", height: "14px" }} />
-              Prep: {recipe.prep_time || 15} min
+              Prep: 15 min
             </span>
             <span style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "0.25rem 0.5rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
               <Clock style={{ width: "14px", height: "14px" }} />
-              Cook: {recipe.cooking_time || 25} min
+              Cook: 25 min
             </span>
-            {recipe.dietary_info && (
-              <span style={{ backgroundColor: "#dcfce7", color: "#15803d", borderRadius: "6px", padding: "0.25rem 0.5rem" }}>
-                {recipe.dietary_info}
-              </span>
-            )}
           </div>
 
           {expanded && (
             <>
+              {/* הצגת רכיבים */}
               <div style={{ marginTop: "1rem" }}>
                 <p style={{ fontWeight: "bold", fontSize: "0.9rem", marginBottom: "0.25rem" }}>Ingredients:</p>
-                <ul style={{ marginLeft: "1.5rem", color: "#4b5563", fontSize: "0.875rem" }}>
-                  {recipe.ingredients.map((ing, i) => (
-                    <li key={i}>{ing}</li>
-                  ))}
-                </ul>
+                {Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 ? (
+                  <ul style={{ marginLeft: "1.5rem", color: "#4b5563", fontSize: "0.875rem" }}>
+                    {recipe.ingredients.map((ing, i) => (
+                      <li key={i}>{ing}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ color: "#4b5563", fontSize: "0.875rem" }}>No ingredients provided.</p>
+                )}
               </div>
+
+              {/* הצגת הוראות הכנה */}
               <div style={{ marginTop: "1rem" }}>
                 <p style={{ fontWeight: "bold", fontSize: "0.9rem", marginBottom: "0.25rem" }}>Instructions:</p>
-                <ol style={{ marginLeft: "1.5rem", color: "#4b5563", fontSize: "0.875rem" }}>
-                  {recipe.instructions.map((step, i) => (
-                    <li key={i} style={{ marginBottom: "0.5rem" }}>{step}</li>
-                  ))}
-                </ol>
+                {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 ? (
+                  <ol style={{ marginLeft: "1.5rem", color: "#4b5563", fontSize: "0.875rem" }}>
+                    {recipe.instructions.map((step, i) => (
+                      <li key={i} style={{ marginBottom: "0.5rem" }}>{step}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p style={{ color: "#4b5563", fontSize: "0.875rem" }}>No instructions provided.</p>
+                )}
               </div>
             </>
           )}
@@ -67,7 +73,7 @@ export default function SuggestedRecipes({ recipes }) {
           </>
         ) : (
           <>
-            <ChevronDown style={{ width: "16px", height: "16px", marginRight: "4px" }} /> Show Detailed Recipes
+            <ChevronDown style={{ width: "16px", height: "16px", marginRight: "4px" }} /> Show Recipe Details
           </>
         )}
       </button>

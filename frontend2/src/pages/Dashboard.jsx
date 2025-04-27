@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import RecommendedRecipes from "../components/dashboard/RecommendedRecipes";
 import TopRecipes from "../components/dashboard/TopRecipes";
 import InventoryStatus from "../components/dashboard/InventoryStatus";
+import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   const [recipes, setRecipes] = useState([]);
@@ -42,25 +43,37 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>🍳 Welcome to SmartCook</h1>
+    <div className="p-8 max-w-7xl mx-auto">
+      <motion.h1 
+        className="text-4xl font-bold text-pink-400 mb-8 flex items-center gap-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        🍳 Welcome to SmartCook
+      </motion.h1>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
-        <div>
-          <RecommendedRecipes 
-            recipes={recipes}
-            userPrefs={userPrefs}
-            inventory={inventory}
-            loading={loading}
-          />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="bg-white/70 rounded-xl p-6 shadow">
+            <RecommendedRecipes 
+              recipes={recipes}
+              userPrefs={userPrefs}
+              inventory={inventory}
+              loading={loading}
+            />
+          </div>
 
-          <TopRecipes 
-            recipes={topRecipes}
-            loading={loading}
-          />
+          <div className="bg-white/70 rounded-xl p-6 shadow">
+            <TopRecipes 
+              recipes={topRecipes}
+              loading={loading}
+            />
+          </div>
         </div>
 
-        <div>
+        {/* Sidebar */}
+        <div className="bg-white/70 rounded-xl p-6 shadow">
           <InventoryStatus 
             inventory={inventory}
             loading={loading}

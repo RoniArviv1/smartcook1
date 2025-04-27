@@ -1,29 +1,37 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
-from app.routes.assistant_routes import assistant_bp  # ייבוא של ה-Blueprint מהנתיב
+from app.extensions import db, migrate, jwt
+from flask_cors import CORS  # ייבוא ניהול CORS
 
-# אתחול של הספריות
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
+# ייבוא כל ה-Blueprints
+from app.routes.assistant_routes import assistant_bp
+from app.routes.auth_routes import auth_bp
+from app.routes.inventory_routes import inventory_bp
+from app.routes.notification_routes import notification_bp
+from app.routes.recipe_routes import recipe_bp
+from app.routes.user_routes import user_bp
 
 def create_app():
-    # יצירת אפליקציה חדשה
     app = Flask(__name__)
 
-    # הגדרת קונפיגורציה לאפליקציה
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:0504903322Rr@localhost:5432/smartcookdb'  # הגדרת URI של בסיס הנתונים
+    # === קונפיגורציה בסיסית ===
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:0504903322Rr@localhost:5432/smartcookdb'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = 'super-secret-key'  # הגדרת המפתח של JWT
+    app.config['JWT_SECRET_KEY'] = 'super-secret-key'
 
-    # אתחול של הספריות עם האפליקציה
+    # === אתחול הרחבות ===
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # רישום של ה-Blueprint של ה-Assistant
+    # === הגדרת CORS (מאפשר קריאות רק מה-Frontend) ===
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+
+    # === רישום נתיבים (Blueprints) ===
     app.register_blueprint(assistant_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api')
+    app.register_blueprint(inventory_bp, url_prefix='/api/inventory')
+    app.register_blueprint(notification_bp, url_prefix='/api/notifications')
+    app.register_blueprint(recipe_bp, url_prefix='/api/recipe')
+    app.register_blueprint(user_bp, url_prefix='/api/profile')
 
     return app

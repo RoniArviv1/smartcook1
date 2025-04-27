@@ -4,14 +4,24 @@ from app.services.assistant_service import suggest_recipes_from_huggingface
 assistant_bp = Blueprint('assistant', __name__)
 
 @assistant_bp.route('/assistant', methods=['POST'])
-def suggest_recipes():
-    data = request.get_json()  # מקבל את הנתונים שנשלחים ב-body של ה-POST
-    user_id = data.get("user_id", 1)  # קבלת user_id מהנתונים, אם לא נמצא יבחר 1 כברירת מחדל
+def handle_assistant():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    user_message = data.get("message")
     ingredients = data.get("ingredients", "")
 
-    recipes = suggest_recipes_from_huggingface(user_id, ingredients)  # קריאה לפונקציה שתשלח את הבקשה ל-HuggingFace
+    if not user_message:
+        return jsonify({"error": "No message provided."}), 400
 
-    if isinstance(recipes, dict) and "error" in recipes:  # אם יש שגיאה בתגובה
-        return jsonify({"error": recipes["error"]}), 500
+    result = suggest_recipes_from_huggingface(user_id, ingredients, user_message)
 
-    return jsonify({"response": recipes})  # מחזיר את התגובה שהתקבלה מ-HuggingFace
+    if "error" in result:
+        return jsonify({
+            "error": f"AI Error: {result['error']}",
+            "recipes": []
+        }), 500
+
+    return jsonify({
+        "user_id": result["user_id"],
+        "recipes": result["recipes"]
+    })

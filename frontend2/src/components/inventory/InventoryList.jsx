@@ -93,7 +93,7 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
                   onChange={(e) => setEditForm({ ...editForm, expiry_date: e.target.value })}
                 />
               ) : (
-                ingredient.expiry_date && (
+                ingredient.expiry_date ? (
                   <>
                     {format(new Date(ingredient.expiry_date), "MMM d, yyyy")}
                     {getExpiryStatus(ingredient.expiry_date) === "expired" && (
@@ -105,6 +105,8 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
                       </span>
                     )}
                   </>
+                ) : (
+                  <span style={{ color: "gray" }}>No Date</span>
                 )
               )}
             </td>

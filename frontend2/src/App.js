@@ -10,24 +10,68 @@ import Assistant from "./pages/Assistant";
 export default function App() {
   return (
     <Router>
-      <div>
-        {/* Navigation bar */}
-        <nav style={{ padding: "1rem", backgroundColor: "#f8fafc", borderBottom: "1px solid #ddd" }}>
-          <ul style={{ display: "flex", gap: "1rem", listStyle: "none", margin: 0 }}>
-            {/* Active link will have a bold style */}
-            <li><NavLink to="/" end style={({ isActive }) => ({ fontWeight: isActive ? "bold" : "normal" })}>Dashboard</NavLink></li>
-            <li><NavLink to="/inventory" style={({ isActive }) => ({ fontWeight: isActive ? "bold" : "normal" })}>Inventory</NavLink></li>
-            <li><NavLink to="/profile" style={({ isActive }) => ({ fontWeight: isActive ? "bold" : "normal" })}>Profile</NavLink></li>
-            <li><NavLink to="/assistant" style={({ isActive }) => ({ fontWeight: isActive ? "bold" : "normal" })}>Assistant</NavLink></li>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-green-50 text-gray-800 font-sans">
+        
+        {/* Navigation Bar */}
+        <nav className="bg-white/80 backdrop-blur shadow-md px-6 py-4 sticky top-0 z-50">
+          <ul className="flex gap-6 justify-center">
+            <li>
+              <NavLink 
+                to="/" 
+                end
+                className={({ isActive }) =>
+                  isActive 
+                    ? "font-bold text-pink-500 border-b-2 border-pink-400 pb-1" 
+                    : "hover:text-pink-400 transition"
+                }
+              >
+                Dashboard
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/inventory"
+                className={({ isActive }) =>
+                  isActive 
+                    ? "font-bold text-blue-500 border-b-2 border-blue-400 pb-1" 
+                    : "hover:text-blue-400 transition"
+                }
+              >
+                Inventory
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/profile"
+                className={({ isActive }) =>
+                  isActive 
+                    ? "font-bold text-green-500 border-b-2 border-green-400 pb-1" 
+                    : "hover:text-green-400 transition"
+                }
+              >
+                Profile
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/assistant"
+                className={({ isActive }) =>
+                  isActive 
+                    ? "font-bold text-purple-500 border-b-2 border-purple-400 pb-1" 
+                    : "hover:text-purple-400 transition"
+                }
+              >
+                Assistant
+              </NavLink>
+            </li>
           </ul>
         </nav>
 
-        {/* Page routes */}
-        <div style={{ padding: "2rem" }}>
+        {/* Page Content */}
+        <div className="p-6">
           <Routes>
-            {/* Home route */}
             <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} /> {/* Optional, you can remove if not needed */}
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/assistant" element={<Assistant />} />

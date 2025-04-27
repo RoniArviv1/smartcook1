@@ -1,33 +1,47 @@
 from huggingface_hub import InferenceClient
+from dotenv import load_dotenv
+import os
 
-# את יכולה לטעון את הטוקן מקובץ חיצוני או להכניס אותו ישירות כאן
-client = InferenceClient(api_key="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")
+load_dotenv()
+client = InferenceClient(api_key=os.getenv("HUGGINGFACE_API_KEY"))
 
-def suggest_recipes_from_huggingface(user_id, ingredients):
-    """
-    Generates a recipe based on user input using Hugging Face's Mistral model.
-    
-    :param user_id: str or int - ID of the user requesting the recipe
-    :param ingredients: str - list of ingredients (e.g. "tomato, egg, onion")
-    :return: dict with the result or error message
-    """
+def suggest_recipes_from_huggingface(user_id, ingredients, user_message):
     try:
-        prompt = f"Give me a simple recipe using: {ingredients}"
+        ingredients_text = ', '.join(ingredients) if ingredients else 'common ingredients like eggs, flour, and milk'
+
+        prompt = (
+            f"You are a helpful cooking assistant.\n"
+            f"Suggest a simple and creative recipe using these ingredients: {ingredients_text}.\n"
+            f"Write it as a short paragraph, including the recipe title, main ingredients, and brief instructions.\n"
+            f"Keep it clear and concise."
+        )
+
+        print("📤 Sending prompt to AI:\n", prompt)
 
         result = client.text_generation(
-            prompt,
-            model="mistralai/Mistral-7B-Instruct-v0.1",
-            max_new_tokens=200
+            prompt=prompt,
+            model="google/flan-t5-large",
+            max_new_tokens=150,
+            temperature=0.9
         )
+
+        print("🎯 AI Raw Response:\n", result)
+
+        recipe_data = {
+            "title": "AI Suggested Recipe",
+            "ingredients": ingredients if ingredients else ['Eggs', 'Flour', 'Milk'],
+            "instructions": [result.strip()]   # כל הפסקה בתוך רשימה אחת
+        }
 
         return {
             "user_id": user_id,
-            "ingredients": ingredients,
-            "recipe": result
+            "recipes": [recipe_data]
         }
 
     except Exception as e:
+        print("❗ Hugging Face Error:", e)
         return {
             "user_id": user_id,
+            "recipes": [],
             "error": str(e)
         }

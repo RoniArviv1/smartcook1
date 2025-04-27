@@ -6,8 +6,10 @@ class User(db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
 
-    # שדה מתוקן: מחרוזת באורך בלתי מוגבל במקום 128 תווים
     password_hash = db.Column(db.Text, nullable=False)
+
+    # ✅ הוספת שדה לשמירת העדפות כ-JSON (מחרוזת)
+    preferences = db.Column(db.Text)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -18,7 +20,19 @@ class User(db.Model):
 
 class InventoryItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    name = db.Column(db.String(100))
-    quantity = db.Column(db.Integer)
+    name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50))
+    quantity = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(20))
     expiration_date = db.Column(db.Date)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "category": self.category,
+            "quantity": self.quantity,
+            "unit": self.unit,
+            "expiry_date": self.expiration_date.strftime('%Y-%m-%d') if self.expiration_date else None
+        }

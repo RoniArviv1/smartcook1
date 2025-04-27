@@ -1,6 +1,6 @@
 import React from 'react';
-import { cn } from "@/lib/utils";
 import { ChefHat, User } from "lucide-react";
+import cn from 'classnames';  // הייבוא של classnames
 
 export default function ChatMessage({ message }) {
   return (

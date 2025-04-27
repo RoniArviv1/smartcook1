@@ -24,19 +24,26 @@ export default function Inventory() {
   };
 
   const handleAddIngredient = async (ingredient) => {
+    // הדפסת בדיקה לראות מה נשלח ל-Backend
+    console.log("📤 Sending ingredient to backend:", ingredient);
+
     try {
-      const response = await fetch("http://localhost:5000/api/inventory", {
+      const response = await fetch("http://localhost:5000/api/inventory/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ingredient),
       });
+
       const newItem = await response.json();
+      console.log("✅ Received from backend:", newItem);  // בדיקה מה חזר מהשרת
+
       setIngredients((prev) => [...prev, newItem]);
       setShowAddForm(false);
     } catch (error) {
-      console.error("Error adding ingredient:", error);
+      console.error("❌ Error adding ingredient:", error);
     }
-  };
+};
+
 
   const handleUpdateIngredient = async (id, updates) => {
     try {
@@ -86,4 +93,3 @@ export default function Inventory() {
     </div>
   );
 }
-

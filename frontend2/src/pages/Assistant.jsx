@@ -1,67 +1,81 @@
-import React, { useState } from "react";
-import SuggestedRecipes from "../components/assistant/SuggestedRecipes";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import KitchenAssistant from "../components/assistant/KitchenAssistant";
 
 export default function Assistant() {
-  const [recipes, setRecipes] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [freeText, setFreeText] = useState(""); // משתנה לאחסון טקסט חופשי שהמשתמש יכתוב
+  const [inventory, setInventory] = useState([]);
+  const [userPrefs, setUserPrefs] = useState({});
+  const [userName] = useState("SmartCook User");
+  const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token"); // או מאיפה שאת שומרת את ה-token
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleSuggest = async () => {
-    setLoading(true);
-    setError(null);
-
+  const loadData = async () => {
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/assistant", // כתובת ה-API שלך
-        {
-          user_id: 1, // לדוגמה, אפשר לשנות לפי הצורך
-          free_text: freeText, // שליחה של הטקסט החופשי בלבד
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }, // הוספת ה-token בכותרת הבקשה
-        }
-      );
-      setRecipes(res.data.response); // מתקבל JSON
-    } catch (err) {
-      setError("Something went wrong.");
-    }
+      console.warn("🔧 Using fallback inventory & prefs (no server)");
 
+      // נתונים מדומים
+      setInventory([
+        { id: 1, name: "Milk", quantity: 1, expiry_date: "2025-04-20" },
+        { id: 2, name: "Tomato", quantity: 3, expiry_date: "2025-04-22" }
+      ]);
+
+      setUserPrefs({
+        vegetarian: true,
+        allergies: ["nuts"]
+      });
+    } catch (err) {
+      console.error("Error loading mock data:", err);
+    }
     setLoading(false);
   };
 
-  const handleTextChange = (event) => {
-    setFreeText(event.target.value); // עדכון הטקסט החופשי
+  const onSendMessage = async (message, history) => {
+    try {
+      const ingredientsList = inventory.map(item => item.name);
+
+      const res = await fetch("http://localhost:5000/api/assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: 1,
+          message,
+          ingredients: ingredientsList
+        })
+      });
+
+      const data = await res.json();
+      console.log("🎯 AI Response:", data);
+
+      return {
+        response: "Here is your recipe suggestion:",
+        recipes: data.recipes || []
+      };
+
+    } catch (err) {
+      console.error("❌ Error sending message to AI:", err);
+      return {
+        response: "Sorry, something went wrong.",
+        recipes: []
+      };
+    }
   };
+
+  if (loading) {
+    return <p style={{ padding: "20px" }}>Loading assistant...</p>;
+  }
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>🧠 SmartCook Assistant</h1>
-
-      <button onClick={handleSuggest} disabled={loading}>
-        {loading ? "Thinking..." : "Suggest me recipes"}
-      </button>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      <div style={{ marginTop: "20px" }}>
-        <textarea
-          placeholder="Ask me anything about recipes..."
-          value={freeText}
-          onChange={handleTextChange}
-          rows={4}
-          style={{
-            width: "100%",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        />
-      </div>
-
-      {recipes && <SuggestedRecipes recipes={recipes} />}
+      <KitchenAssistant
+        onSendMessage={onSendMessage}
+        inventory={inventory}
+        userPrefs={userPrefs}
+        userName={userName}
+      />
     </div>
   );
 }

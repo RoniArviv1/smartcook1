@@ -1,14 +1,23 @@
-import React from 'react';
-import { 
-  Apple, 
-  AlertTriangle,
-  Utensils, 
-  UserCircle2,
-  Heart
-} from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { Apple, AlertTriangle, UserCircle2, Heart } from "lucide-react";
 import { differenceInDays } from "date-fns";
 
-export default function ProfileSummary({ userPrefs, inventory, userName }) {
+export default function ProfileSummary({ inventory, userName }) {
+  const [userPrefs, setUserPrefs] = useState(null);
+
+  useEffect(() => {
+    const fetchUserPrefs = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/profile/1");  // בהנחה ש-User ID = 1
+        const data = await response.json();
+        setUserPrefs(data);
+      } catch (error) {
+        console.error("Failed to load user preferences:", error);
+      }
+    };
+    fetchUserPrefs();
+  }, []);
+
   const getExpiringIngredients = () => {
     return inventory
       .filter(ing => ing.expiry_date)
@@ -19,16 +28,16 @@ export default function ProfileSummary({ userPrefs, inventory, userName }) {
   };
 
   const getAllergies = () => {
-    const allAllergies = [...(userPrefs?.allergies || [])];
-    if (userPrefs?.custom_allergies) {
-      const customAllergiesList = userPrefs.custom_allergies
-        .split(',')
-        .map(item => item.trim())
-        .filter(Boolean);
-      allAllergies.push(...customAllergiesList);
+    if (!userPrefs) return [];
+    const allAllergies = [...(userPrefs.allergies || [])];
+    if (userPrefs.custom_allergies) {
+      const customList = userPrefs.custom_allergies.split(',').map(a => a.trim()).filter(Boolean);
+      allAllergies.push(...customList);
     }
     return allAllergies;
   };
+
+  if (!userPrefs) return <p>Loading profile...</p>;
 
   return (
     <div style={{ margin: "1rem", backgroundColor: "#f9fafb", border: "1px dashed #ddd", borderRadius: "8px", padding: "1rem" }}>
@@ -40,11 +49,8 @@ export default function ProfileSummary({ userPrefs, inventory, userName }) {
           </h3>
           <div style={{ fontSize: "0.9rem", lineHeight: "1.4" }}>
             <div><strong style={{ color: "#6b7280" }}>Name:</strong> {userName || "User"}</div>
-            <div><strong style={{ color: "#6b7280" }}>Cooking Level:</strong> {userPrefs?.cooking_skill ? userPrefs.cooking_skill.charAt(0).toUpperCase() + userPrefs.cooking_skill.slice(1) : "Not specified"}</div>
-            <div><strong style={{ color: "#6b7280" }}>Household Size:</strong> {userPrefs?.household_size || 1} {userPrefs?.household_size === 1 ? "person" : "people"}</div>
-            {userPrefs?.preferred_cuisines?.length > 0 && (
-              <div><strong style={{ color: "#6b7280" }}>Preferred Cuisines:</strong> {userPrefs.preferred_cuisines.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(", ")}</div>
-            )}
+            <div><strong style={{ color: "#6b7280" }}>Cooking Level:</strong> {userPrefs.cooking_skill || "Not specified"}</div>
+            <div><strong style={{ color: "#6b7280" }}>Meal Preference:</strong> {userPrefs.meal_preference || "Not specified"}</div>
           </div>
         </div>
 
@@ -54,10 +60,10 @@ export default function ProfileSummary({ userPrefs, inventory, userName }) {
             Dietary Preferences
           </h3>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-            {userPrefs?.dietary_restrictions?.length > 0 ? (
-              userPrefs.dietary_restrictions.map(restriction => (
-                <span key={restriction} style={{ backgroundColor: "#ecfdf5", border: "1px solid #d1fae5", borderRadius: "4px", padding: "2px 6px", fontSize: "0.8rem" }}>
-                  {restriction.replace('_', ' ')}
+            {userPrefs.dietary_restrictions?.length > 0 ? (
+              userPrefs.dietary_restrictions.map(r => (
+                <span key={r} style={{ backgroundColor: "#ecfdf5", border: "1px solid #d1fae5", borderRadius: "4px", padding: "2px 6px", fontSize: "0.8rem" }}>
+                  {r}
                 </span>
               ))
             ) : (
