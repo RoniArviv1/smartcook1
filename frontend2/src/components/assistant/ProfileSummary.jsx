@@ -1,109 +1,172 @@
-import React, { useEffect, useState } from 'react';
+// src/components/assistant/ProfileSummary.jsx
+import React, { useEffect, useState } from "react";
 import { Apple, AlertTriangle, UserCircle2, Heart } from "lucide-react";
 import { differenceInDays } from "date-fns";
 
-export default function ProfileSummary({ inventory, userName }) {
-  const [userPrefs, setUserPrefs] = useState(null);
+/**
+ * props
+ * -----
+ * userPrefs : Object | null  ←  העדפות שמגיעות מההורה
+ * inventory : Array          ←  רשימת המצרכים
+ * userName  : string         ←  שם המשתמש
+ *
+ * (רשות)   loadPrefs : bool ←  אם true, יטען בעצמו מ־/api/profile/<userId>
+ * (רשות)   userId    : int  ←  נחוץ רק אם loadPrefs=true
+ */
+export default function ProfileSummary({
+  userPrefs,
+  inventory,
+  userName,
+  loadPrefs = false,
+  userId
+}) {
+  /* טעינה עצמית – רק אם ביקשנו מפורשות */
+  const [prefs, setPrefs] = useState(userPrefs);
+  useEffect(() => setPrefs(userPrefs), [userPrefs]);
 
   useEffect(() => {
-    const fetchUserPrefs = async () => {
+    if (!loadPrefs) return;
+
+    const fetchPrefs = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/profile/1");  // בהנחה ש-User ID = 1
-        const data = await response.json();
-        setUserPrefs(data);
-      } catch (error) {
-        console.error("Failed to load user preferences:", error);
+        const res = await fetch(`http://localhost:5000/api/profile/${userId}`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        setPrefs(data);
+      } catch (err) {
+        console.error("Failed to load user preferences:", err);
       }
     };
-    fetchUserPrefs();
-  }, []);
+    fetchPrefs();
+  }, [loadPrefs, userId]);
 
-  const getExpiringIngredients = () => {
-    return inventory
-      .filter(ing => ing.expiry_date)
-      .filter(ing => {
-        const daysUntilExpiry = Math.ceil((new Date(ing.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
-        return daysUntilExpiry <= 3;
-      });
+  /* ------------- פונקציות עזר ------------- */
+  const expiringSoon = () =>
+    inventory
+      .filter((i) => i.expiry_date)
+      .filter(
+        (i) =>
+          differenceInDays(new Date(i.expiry_date), new Date()) <= 3
+      );
+
+  const allergyList = () => {
+    if (!prefs) return [];
+    const base = prefs.allergies || [];
+    const custom =
+      prefs.custom_allergies?.split(",").map((s) => s.trim()) || [];
+    return [...base, ...custom].filter(Boolean);
   };
 
-  const getAllergies = () => {
-    if (!userPrefs) return [];
-    const allAllergies = [...(userPrefs.allergies || [])];
-    if (userPrefs.custom_allergies) {
-      const customList = userPrefs.custom_allergies.split(',').map(a => a.trim()).filter(Boolean);
-      allAllergies.push(...customList);
-    }
-    return allAllergies;
-  };
+  /* טעינה? */
+  if (!prefs) return <p>Loading profile…</p>;
 
-  if (!userPrefs) return <p>Loading profile...</p>;
-
+  /* ---------------------------------------------------- */
+  /*                   JSX Starts Here                    */
+  /* ---------------------------------------------------- */
   return (
-    <div style={{ margin: "1rem", backgroundColor: "#f9fafb", border: "1px dashed #ddd", borderRadius: "8px", padding: "1rem" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-        <div>
-          <h3 style={{ fontWeight: "600", display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-            <UserCircle2 style={{ width: 16, height: 16 }} />
+    <div className="m-4 bg-gray-50 border border-dashed rounded-lg p-4">
+      {/* פרטי משתמש + הרגלי תזונה */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* --- Profile Info --- */}
+        <section>
+          <h3 className="font-semibold flex items-center gap-2 mb-2">
+            <UserCircle2 className="w-4 h-4" />
             Profile
           </h3>
-          <div style={{ fontSize: "0.9rem", lineHeight: "1.4" }}>
-            <div><strong style={{ color: "#6b7280" }}>Name:</strong> {userName || "User"}</div>
-            <div><strong style={{ color: "#6b7280" }}>Cooking Level:</strong> {userPrefs.cooking_skill || "Not specified"}</div>
-            <div><strong style={{ color: "#6b7280" }}>Meal Preference:</strong> {userPrefs.meal_preference || "Not specified"}</div>
-          </div>
-        </div>
+          <ul className="text-sm leading-relaxed">
+            <li>
+              <span className="text-gray-500">Name:</span>{" "}
+              {userName || "User"}
+            </li>
+            <li>
+              <span className="text-gray-500">Cooking Level:</span>{" "}
+              {prefs.cooking_skill || "Not specified"}
+            </li>
+            <li>
+              <span className="text-gray-500">Meal Preference:</span>{" "}
+              {prefs.meal_preference || "Not specified"}
+            </li>
+          </ul>
+        </section>
 
-        <div>
-          <h3 style={{ fontWeight: "600", display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-            <Heart style={{ width: 16, height: 16 }} />
+        {/* --- Dietary & Allergy --- */}
+        <section>
+          <h3 className="font-semibold flex items-center gap-2 mb-2">
+            <Heart className="w-4 h-4" />
             Dietary Preferences
           </h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-            {userPrefs.dietary_restrictions?.length > 0 ? (
-              userPrefs.dietary_restrictions.map(r => (
-                <span key={r} style={{ backgroundColor: "#ecfdf5", border: "1px solid #d1fae5", borderRadius: "4px", padding: "2px 6px", fontSize: "0.8rem" }}>
-                  {r}
+
+          {/* Dietary Tags */}
+          <div className="flex flex-wrap gap-2">
+            {prefs.dietary_restrictions?.length ? (
+              prefs.dietary_restrictions.map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-xs capitalize"
+                >
+                  {tag.replace("_", " ")}
                 </span>
               ))
             ) : (
-              <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>No dietary restrictions specified</span>
+              <span className="text-gray-500 text-sm">
+                No dietary restrictions specified
+              </span>
             )}
           </div>
 
-          <h4 style={{ marginTop: "1rem", marginBottom: "0.25rem", fontSize: "0.85rem", fontWeight: "500" }}>Allergies:</h4>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-            {getAllergies().length > 0 ? (
-              getAllergies().map(allergy => (
-                <span key={allergy} style={{ backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: "4px", padding: "2px 6px", fontSize: "0.8rem" }}>
-                  {allergy}
+          {/* Allergies */}
+          <h4 className="mt-4 mb-1 font-medium text-sm">Allergies:</h4>
+          <div className="flex flex-wrap gap-2">
+            {allergyList().length ? (
+              allergyList().map((a) => (
+                <span
+                  key={a}
+                  className="bg-red-50 border border-red-300 text-red-700 rounded px-2 py-1 text-xs"
+                >
+                  {a}
                 </span>
               ))
             ) : (
-              <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>No allergies specified</span>
+              <span className="text-gray-500 text-sm">
+                No allergies specified
+              </span>
             )}
           </div>
-        </div>
+        </section>
       </div>
 
-      <div style={{ marginTop: "1.5rem" }}>
-        <h3 style={{ fontWeight: "600", display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-          <AlertTriangle style={{ width: 16, height: 16 }} />
+      {/* --- Expiring Soon --- */}
+      <section className="mt-6">
+        <h3 className="font-semibold flex items-center gap-2 mb-2">
+          <AlertTriangle className="w-4 h-4" />
           Expiring Soon
         </h3>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-          {getExpiringIngredients().length > 0 ? (
-            getExpiringIngredients().map(ing => (
-              <span key={ing.id} style={{ backgroundColor: "#fefce8", border: "1px solid #fcd34d", color: "#92400e", borderRadius: "4px", padding: "2px 6px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Apple style={{ width: 12, height: 12 }} /> {ing.name}
-                <span style={{ fontSize: "0.75rem" }}>({differenceInDays(new Date(ing.expiry_date), new Date())} days)</span>
+        <div className="flex flex-wrap gap-2">
+          {expiringSoon().length ? (
+            expiringSoon().map((ing) => (
+              <span
+                key={ing.id}
+                className="bg-yellow-50 border border-yellow-300 text-amber-800 rounded px-2 py-1 text-xs flex items-center gap-1"
+              >
+                <Apple className="w-3 h-3" />
+                {ing.name}
+                <span className="text-[10px]">
+                  (
+                  {differenceInDays(
+                    new Date(ing.expiry_date),
+                    new Date()
+                  )}{" "}
+                  days)
+                </span>
               </span>
             ))
           ) : (
-            <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>No ingredients expiring soon</span>
+            <span className="text-gray-500 text-sm">
+              No ingredients expiring soon
+            </span>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

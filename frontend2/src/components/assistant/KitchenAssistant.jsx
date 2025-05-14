@@ -1,11 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+// src/components/assistant/KitchenAssistant.jsx
+import React, { useState, useRef, useEffect } from "react";
 import { Input } from "../ui/input";
 import Button from "../ui/button";
 import { Send, ChefHat, Sparkles, Apple } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import SuggestedRecipes from "./SuggestedRecipes";
 import ProfileSummary from "./ProfileSummary";
+import { Link } from "react-router-dom";
 
+/* דוגמאות שאלות */
 const EXAMPLE_QUESTIONS = [
   "What can I cook with the ingredients I have?",
   "Suggest a quick healthy dinner",
@@ -13,11 +16,19 @@ const EXAMPLE_QUESTIONS = [
   "What's expiring soon and how can I use it?"
 ];
 
-export default function KitchenAssistant({ inventory, userName, onSendMessage }) {
+export default function KitchenAssistant({
+  inventory,
+  userName,
+  userId,                /* ◀ מקבל user_id מהורה */
+  onSendMessage
+}) {
+  /* ------------------------------------------------------- */
+  /*                       STATE                             */
+  /* ------------------------------------------------------- */
   const [messages, setMessages] = useState([
     {
       type: "assistant",
-      content: `👋 Hello${userName ? ` ${userName}` : ''}, I'm your SmartCook Assistant.\nHow can I inspire your next meal today?`
+      content: `👋 Hello${userName ? ` ${userName}` : ""}, I'm your SmartCook Assistant.\nHow can I inspire your next meal today?`
     }
   ]);
 
@@ -26,15 +37,25 @@ export default function KitchenAssistant({ inventory, userName, onSendMessage })
   const [profileData, setProfileData] = useState(null);
   const messagesEndRef = useRef(null);
 
+  /* ------------------------------------------------------- */
+  /*      גלילה אוטומטית לסוף בכל הודעה חדשה               */
+  /* ------------------------------------------------------- */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /* ------------------------------------------------------- */
+  /*        טעינת העדפות משתמש בלחיצה על Profile            */
+  /* ------------------------------------------------------- */
   const handleProfileClick = async () => {
     if (!showProfile) {
       try {
-        const response = await fetch("http://localhost:5000/api/profile/preferences");
-        const data = await response.json();
+        const res = await fetch(
+          `http://localhost:5000/api/profile/${userId}`
+        );
+        if (!res.ok)
+          throw new Error(`Profile load failed: ${res.status}`);
+        const data = await res.json();
         setProfileData(data);
       } catch (error) {
         console.error("Failed to load profile data:", error);
@@ -43,60 +64,83 @@ export default function KitchenAssistant({ inventory, userName, onSendMessage })
     setShowProfile(!showProfile);
   };
 
+  /* ------------------------------------------------------- */
+  /*                   שליחת הודעה ל-AI                      */
+  /* ------------------------------------------------------- */
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    setMessages(prev => [...prev, { type: "user", content: input.trim() }]);
+    /* מייד מציגים את הודעת המשתמש */
+    setMessages((prev) => [...prev, { type: "user", content: input.trim() }]);
     setInput("");
 
+    /* שולחים ל-backend */
     const response = await onSendMessage(input.trim(), messages.slice(-4));
-    setMessages(prev => [...prev, {
-      type: "assistant",
-      content: response.response,
-      suggestedRecipes: response.recipes || []
-    }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        type: "assistant",
+        content: response.response,
+        suggestedRecipes: response.recipes || []
+      }
+    ]);
   };
 
+  /* ------------------------------------------------------- */
+  /*                         UI                              */
+  /* ------------------------------------------------------- */
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-100 flex flex-col items-center p-6">
-      {/* Header */}
+      {/* ---------- Header ---------- */}
       <header className="w-full max-w-4xl flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <div className="bg-gray-200 p-2 rounded-full">
             <ChefHat className="w-5 h-5 text-gray-700" />
           </div>
-          <h1 className="text-2xl font-light text-gray-800">SmartCook Assistant</h1>
+          <h1 className="text-2xl font-light text-gray-800">
+            SmartCook Assistant
+          </h1>
         </div>
+
         <div className="flex gap-2">
+          {/* Profile button */}
           <Button variant="ghost" onClick={handleProfileClick}>
-            <Sparkles className="w-4 h-4 mr-1" /> Profile
+            <Sparkles className="w-4 h-4 mr-1" />
+            Profile
           </Button>
-          <Button variant="ghost">
-            <Apple className="w-4 h-4 mr-1" /> Ingredients
-          </Button>
+
+          {/* Ingredients page – אם את משתמשת ב-React-Router */}
+          <Link to="/inventory">
+            <Button variant="ghost">
+              <Apple className="w-4 h-4 mr-1" />
+              Ingredients
+            </Button>
+          </Link>
         </div>
       </header>
 
-      {/* Chat Area */}
+      {/* ---------- Chat Box ---------- */}
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-sm flex flex-col flex-1 overflow-hidden">
         <div className="flex-1 p-6 overflow-y-auto space-y-4">
           {messages.map((msg, idx) => (
             <div key={idx}>
               <ChatMessage message={msg} />
-              {msg.suggestedRecipes && <SuggestedRecipes recipes={msg.suggestedRecipes} />}
+              {msg.suggestedRecipes && (
+                <SuggestedRecipes recipes={msg.suggestedRecipes} />
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Example Questions */}
+        {/* Example Quick-Ask */}
         {messages.length === 1 && (
           <div className="px-6 pb-4">
             <p className="text-sm text-gray-500 mb-2">💡 Try asking:</p>
             <div className="flex flex-wrap gap-2">
               {EXAMPLE_QUESTIONS.map((q, i) => (
-                <span 
+                <span
                   key={i}
                   onClick={() => setInput(q)}
                   className="cursor-pointer px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
@@ -108,15 +152,18 @@ export default function KitchenAssistant({ inventory, userName, onSendMessage })
           </div>
         )}
 
-        {/* Input */}
-        <form onSubmit={handleSend} className="flex items-center gap-3 border-t p-4 bg-gray-50">
+        {/* ---------- Input ---------- */}
+        <form
+          onSubmit={handleSend}
+          className="flex items-center gap-3 border-t p-4 bg-gray-50"
+        >
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your question..."
             className="flex-1 rounded-full bg-white border-gray-300"
           />
-          <Button 
+          <Button
             type="submit"
             className="bg-gray-800 hover:bg-gray-700 text-white rounded-full p-3"
           >
@@ -125,10 +172,14 @@ export default function KitchenAssistant({ inventory, userName, onSendMessage })
         </form>
       </div>
 
-      {/* Profile Summary */}
+      {/* ---------- Profile Summary ---------- */}
       {showProfile && profileData && (
         <div className="w-full max-w-4xl mt-6">
-          <ProfileSummary userPrefs={profileData} inventory={inventory} userName={userName} />
+          <ProfileSummary
+            userPrefs={profileData}
+            inventory={inventory}
+            userName={userName}
+          />
         </div>
       )}
     </div>

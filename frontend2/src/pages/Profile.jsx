@@ -1,48 +1,77 @@
+// src/pages/Profile.jsx
 import React, { useEffect, useState } from "react";
 import PreferencesForm from "../components/profile/PreferencesForm";
 
 export default function Profile() {
-  const [preferences, setPreferences] = useState(null);
+  /* --------------------------------------------------------------- */
+  /*                חילוץ user_id  (JWT / localStorage)              */
+  /* --------------------------------------------------------------- */
+  const storedUser =
+    JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
+  const userId = storedUser.id || 1;     // fallback ל-1 בפיתוח
+
+  /* --------------------------------------------------------------- */
+  /*                             STATE                               */
+  /* --------------------------------------------------------------- */
+  const [preferences, setPreferences] = useState(null); // {dietary:[], allergies:[], ...}
   const [loading, setLoading] = useState(true);
 
+  /* --------------------------------------------------------------- */
+  /*                        טעינת העדפות                            */
+  /* --------------------------------------------------------------- */
   useEffect(() => {
     loadPreferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPreferences = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/profile");
+      const res = await fetch(
+        `http://localhost:5000/api/profile/${userId}`
+      );
+      if (!res.ok)
+        throw new Error(`GET profile failed: ${res.status}`);
+
       const data = await res.json();
       setPreferences(data);
     } catch (error) {
-      console.error("Error loading preferences:", error);
+      console.error("❌ Error loading preferences:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSubmit = async (data) => {
+  /* --------------------------------------------------------------- */
+  /*                        שמירת העדפות                             */
+  /* --------------------------------------------------------------- */
+  const handleSubmit = async (formData) => {
     try {
-      const method = preferences ? "PUT" : "POST";
-      const url = preferences
-        ? `http://localhost:5000/api/profile/${preferences.id}`
-        : `http://localhost:5000/api/profile`;
+      // ה-Backend שלנו תומך ב-PUT ⇢ /api/profile/<user_id>
+      const url = `http://localhost:5000/api/profile/${userId}`;
 
-      await fetch(url, {
-        method,
+      const res = await fetch(url, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formData),
       });
 
-      loadPreferences();
+      if (!res.ok)
+        throw new Error(`PUT profile failed: ${res.status}`);
+
+      loadPreferences();                // רענון-state אחרי שמירה
     } catch (error) {
-      console.error("Error saving preferences:", error);
+      console.error("❌ Error saving preferences:", error);
     }
   };
 
+  /* --------------------------------------------------------------- */
+  /*                              Render                             */
+  /* --------------------------------------------------------------- */
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: 20 }}>
       <h1>👤 Profile Settings</h1>
+
       <PreferencesForm
         preferences={preferences}
         loading={loading}
@@ -51,4 +80,3 @@ export default function Profile() {
     </div>
   );
 }
-

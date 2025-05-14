@@ -1,75 +1,100 @@
+// src/pages/Assistant.jsx
 import React, { useEffect, useState } from "react";
 import KitchenAssistant from "../components/assistant/KitchenAssistant";
 
 export default function Assistant() {
-  const [inventory, setInventory] = useState([]);
-  const [userPrefs, setUserPrefs] = useState({});
-  const [userName] = useState("SmartCook User");
-  const [loading, setLoading] = useState(true);
+  /* ----------------------------------------------------------- */
+  /*                חילוץ user_id  (JWT / localStorage)          */
+  /* ----------------------------------------------------------- */
+  const storedUser =
+    JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
+  const userId   = storedUser.id   || 1;           // fallback = 1
+  const userName = storedUser.name || "SmartCook User";
 
+  /* ----------------------------------------------------------- */
+  /*                           STATE                             */
+  /* ----------------------------------------------------------- */
+  const [inventory, setInventory] = useState([]);  // [{id,name,...}]
+  const [userPrefs, setUserPrefs] = useState({});  // {dietary:[], allergies:[], ...}
+  const [loading,    setLoading]  = useState(true);
+
+  /* ----------------------------------------------------------- */
+  /*          טעינת מלאי + העדפות בפריקת העמוד                 */
+  /* ----------------------------------------------------------- */
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      console.warn("🔧 Using fallback inventory & prefs (no server)");
+      /*   GET  /api/inventory/<user_id>   */
+      const invRes = await fetch(
+        `http://localhost:5000/api/inventory/${userId}`
+      );
+      if (!invRes.ok)
+        throw new Error(`Inventory request failed: ${invRes.status}`);
+      const invData = await invRes.json();         // {inventory:[...]}
 
-      // נתונים מדומים
-      setInventory([
-        { id: 1, name: "Milk", quantity: 1, expiry_date: "2025-04-20" },
-        { id: 2, name: "Tomato", quantity: 3, expiry_date: "2025-04-22" }
-      ]);
+      /*   GET  /api/profile/<user_id>     */
+      const prefRes = await fetch(
+        `http://localhost:5000/api/profile/${userId}`
+      );
+      if (!prefRes.ok)
+        throw new Error(`Profile request failed: ${prefRes.status}`);
+      const prefData = await prefRes.json();
 
-      setUserPrefs({
-        vegetarian: true,
-        allergies: ["nuts"]
-      });
+      setInventory(invData.inventory || []);
+      setUserPrefs(prefData);
     } catch (err) {
-      console.error("Error loading mock data:", err);
+      console.error("❌ Error loading data:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const onSendMessage = async (message, history) => {
+  /* ----------------------------------------------------------- */
+  /*              שליחת הודעה ל-Assistant (Groq)                 */
+  /* ----------------------------------------------------------- */
+  const onSendMessage = async (message /*, history */) => {
     try {
-      const ingredientsList = inventory.map(item => item.name);
-
+      const ingredientsList = inventory.map((i) => i.name);
       const res = await fetch("http://localhost:5000/api/assistant", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: 1,
+          user_id:    userId,
           message,
-          ingredients: ingredientsList
-        })
+          ingredients: ingredientsList,
+          user_prefs:  userPrefs,       // ← העדפות!
+        }),
       });
 
-      const data = await res.json();
-      console.log("🎯 AI Response:", data);
+      if (!res.ok)
+        throw new Error(`Assistant failed: ${res.status}`);
+      const data = await res.json();     // {recipes:[{...}], user_id:...}
 
       return {
         response: "Here is your recipe suggestion:",
-        recipes: data.recipes || []
+        recipes:  data.recipes || [],
       };
-
     } catch (err) {
-      console.error("❌ Error sending message to AI:", err);
+      console.error("❌ Error sending to AI:", err);
       return {
         response: "Sorry, something went wrong.",
-        recipes: []
+        recipes: [],
       };
     }
   };
 
-  if (loading) {
-    return <p style={{ padding: "20px" }}>Loading assistant...</p>;
-  }
+  /* ----------------------------------------------------------- */
+  /*                           Render                            */
+  /* ----------------------------------------------------------- */
+  if (loading) return <p style={{ padding: 20 }}>Loading assistant…</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: 20 }}>
       <KitchenAssistant
         onSendMessage={onSendMessage}
         inventory={inventory}
