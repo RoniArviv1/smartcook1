@@ -1,36 +1,19 @@
-from flask import Blueprint, request, jsonify
-from app.models import User
-from app.extensions import db
-import json
+from flask import Blueprint, jsonify, request
+from app.services.user_service import get_preferences, set_preferences
 
 user_bp = Blueprint('user', __name__)
 
-# 🔹 עדכון העדפות משתמש
-@user_bp.route('/<int:user_id>', methods=['PUT'])
-def update_preferences(user_id):
-    data = request.get_json()
 
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    user.preferences = json.dumps(data)
-    db.session.commit()
-
-    return jsonify({"message": "Preferences updated successfully"}), 200
-
-# 🔹 שליפת העדפות משתמש
 @user_bp.route('/<int:user_id>', methods=['GET'])
-def get_preferences(user_id):
-    user = User.query.get(user_id)
+def get_preferences_route(user_id):
+    prefs = get_preferences(user_id)
+    return jsonify(prefs), 200
 
-    if not user or not user.preferences:
-        return jsonify({
-            "dietary_restrictions": [],
-            "allergies": [],
-            "custom_allergies": "",
-            "cooking_skill": "",
-            "meal_prep": ""
-        })
 
-    return jsonify(json.loads(user.preferences))
+@user_bp.route('/<int:user_id>', methods=['PUT'])
+def update_preferences_route(user_id):
+    data = request.get_json() or {}
+    success = set_preferences(user_id, data)
+    if not success:
+        return jsonify({"message": "User not found"}), 404
+    return jsonify(data), 200
