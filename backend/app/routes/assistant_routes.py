@@ -30,4 +30,5 @@ def handle_assistant():
     return jsonify({
         "user_id": result["user_id"],
         "recipes": result["recipes"]
+        
     })

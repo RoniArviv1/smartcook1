@@ -1,6 +1,6 @@
-/*  src/components/assistant/SuggestedRecipes.jsx  */
 import React, { useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, ChefHat, Clock } from "lucide-react";
+import Button from "../ui/button";
 
 /* helper – מפצל טקסט בודד לצעדים */
 const splitSteps = (text) =>
@@ -12,7 +12,7 @@ const splitSteps = (text) =>
     .filter(Boolean);
 
 /* Tailwind badge utility (שמור ב-JSX-style בסוף הקובץ) */
-export default function SuggestedRecipes({ recipes = [] }) {
+export default function SuggestedRecipes({ recipes = [], onSave = () => {} }) {
   const [open, setOpen] = useState(null);
   const toggle = useCallback((i) => setOpen((p) => (p === i ? null : i)), []);
 
@@ -39,11 +39,7 @@ export default function SuggestedRecipes({ recipes = [] }) {
               onClick={() => toggle(i)}
             >
               <h4 className="text-orange-600 font-semibold">{r.title}</h4>
-              {open === i ? (
-                <ChevronUp size={18} />
-              ) : (
-                <ChevronDown size={18} />
-              )}
+              {open === i ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             </header>
 
             {/* badges */}
@@ -93,6 +89,13 @@ export default function SuggestedRecipes({ recipes = [] }) {
                       <li key={idx}>{s}</li>
                     ))}
                   </ol>
+                </div>
+
+                {/* save button */}
+                <div>
+                  <Button className="mt-2 text-sm" onClick={() => onSave(r)}>
+                    💾 Save Recipe
+                  </Button>
                 </div>
               </div>
             )}

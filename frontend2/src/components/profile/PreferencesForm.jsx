@@ -63,7 +63,15 @@ export default function Profile() {
           <div className="mb-6">
             <h3 className="font-medium mb-2">Dietary Restrictions</h3>
             <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
-              {['Vegetarian', 'Vegan', 'Gluten Free', 'Dairy Free', 'Nut Free', 'Kosher', 'Halal', 'Keto', 'Paleo'].map(item => (
+              {[
+                'Vegetarian',
+                'Vegan',
+                'Gluten Free',
+                'Kosher',
+                'Halal',
+                'Keto',
+                'Paleo'
+              ].map(item => (
                 <label key={item}>
                   <input
                     type="checkbox"
@@ -81,7 +89,16 @@ export default function Profile() {
           <div className="mb-6">
             <h3 className="font-medium mb-2">Allergies</h3>
             <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
-              {['Peanuts', 'Tree Nuts', 'Dairy', 'Eggs', 'Wheat', 'Soy', 'Fish', 'Shellfish', 'Sesame'].map(item => (
+              {[
+                'Peanuts',
+                'Tree Nuts',
+                'Dairy',
+                'Eggs',
+                'Wheat',
+                'Soy',
+                'Fish',
+                'Sesame'
+              ].map(item => (
                 <label key={item}>
                   <input
                     type="checkbox"
@@ -103,7 +120,9 @@ export default function Profile() {
             <input
               type="text"
               value={preferences.additionalAllergies}
-              onChange={e => setPreferences({ ...preferences, additionalAllergies: e.target.value })}
+              onChange={e =>
+                setPreferences({ ...preferences, additionalAllergies: e.target.value })
+              }
               placeholder="e.g., avocado, nightshades..."
               className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-pink-200 outline-none"
             />
@@ -112,7 +131,9 @@ export default function Profile() {
           {/* Cooking Skill & Meal Prep */}
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cooking Skill Level</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cooking Skill Level
+              </label>
               <select
                 value={preferences.skillLevel}
                 onChange={e => setPreferences({ ...preferences, skillLevel: e.target.value })}
@@ -126,7 +147,9 @@ export default function Profile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Meal Prep Preference</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Meal Prep Preference
+              </label>
               <select
                 value={preferences.mealPrep}
                 onChange={e => setPreferences({ ...preferences, mealPrep: e.target.value })}
