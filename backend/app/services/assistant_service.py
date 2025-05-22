@@ -1,14 +1,5 @@
-"""
-SmartCook – Groq interface (multi-diet prefs)
---------------------------------------------
-• Calls Groq and returns a recipe in JSON
-• Handles Vegetarian, Vegan, Gluten Free, Kosher, Halal, Keto, Paleo
-• Lets the model use any subset of the provided ingredients
-• Guarantees 8-12 steps; supports prev_recipe
-"""
-
 from __future__ import annotations
-import json, os, re
+import json, os, re, time, random            # ← הוספנו time ו-random
 from typing import Any, List
 
 from dotenv import load_dotenv
@@ -106,8 +97,11 @@ def _build_restriction_note(dietary: List[str]) -> str:
     return " ".join(notes)
 
 # -----------------------------------------------------------
-# 4. Main function
+# 4. Main function (עם Retry)
 # -----------------------------------------------------------
+MAX_ATTEMPTS = 6                # כמה ניסיונות לפני שמחזירים שגיאה
+RETRY_DELAY  = (0.6, 1.4)       # back-off אקראי בין ניסיונות
+
 def suggest_recipes_from_groq(
     user_id: int,
     ingredients: List[str],
@@ -135,120 +129,145 @@ def suggest_recipes_from_groq(
 
     temperature = 0.9 if any(w in user_message.lower() for w in ["surprise", "different"]) else 0.4
 
-    if prev_recipe:
-        prompt = (
-            f"{SYSTEM_LINE}\n\n"
-            "You are a helpful cooking assistant.\n"
-            f"User previously received this recipe: {prev_recipe['title']}.\n\n"
-            f"User request: {user_message}\n\n"
-            "TASK:\n"
-            "- If the user asks for a *completely different recipe*, suggest a recipe with a clearly different name and primary ingredients.\n"
-            "- Do not suggest something that looks or sounds similar.\n"
-            "- Use a different main protein/ingredient.\n"
-            "- Obey the user's dietary/allergy preferences.\n\n"
-            "Return RAW JSON only with this schema:\n"
-            "{\n"
-            '  "title":       <string>,\n'
-            '  "description": <string>,\n'
-            '  "difficulty":  <"Easy"|"Medium"|"Hard">,\n'
-            '  "servings":    <integer>,\n'
-            '  "prep_minutes":<integer>,\n'
-            '  "cook_minutes":<integer>,\n'
-            '  "calories_per_serving":<integer|null>,\n'
-            '  "ingredients":[{"qty":<number>,"unit":<string>,"name":<string>},...],\n'
-            '  "instructions":["Step 1 text","Step 2 text",...(8-12 items)]\n'
-            "}"
-        )
-    else:
-        prompt = (
-            f"{SYSTEM_LINE}\n\n"
-            "You are a helpful cooking assistant.\n"
-            f"User message: {user_message}\n"
-            f"Available ingredients: {ing_txt}\n"
-            "➤ Use any subset of these ingredients that make culinary sense together. You do not have to use them all.\n"
-            f"User {pref_txt}.\n"
-            f"{restriction_note}\n\n"
-            "Return RAW JSON only with this schema:\n"
-            "{\n"
-            '  "title":       <string>,\n'
-            '  "description": <string>,\n'
-            '  "difficulty":  <"Easy"|"Medium"|"Hard">,\n'
-            '  "servings":    <integer>,\n'
-            '  "prep_minutes":<integer>,\n'
-            '  "cook_minutes":<integer>,\n'
-            '  "calories_per_serving":<integer|null>,\n'
-            '  "ingredients":[{"qty":<number>,"unit":<string>,"name":<string>},...],\n'
-            '  "instructions":["Step 1 text","Step 2 text",...(8-12 items)]\n'
-            "}\n\n"
-            "Rules:\n"
-            "• Qty must be numeric + unit (g, kg, ml, l, cup, tbsp, tsp, piece).\n"
-            "• Provide 8-12 detailed steps.\n"
-            "• You may omit ingredients that are unnecessary; do not feel obliged to use every item.\n"
-        )
+    # -------------------------------------------------------
+    # לולאת RETRY – מנסים עד שנקבל מתכון תקין
+    # -------------------------------------------------------
+    last_error = ""
+    for attempt in range(1, MAX_ATTEMPTS + 1):
 
-    try:
-        res = openai.ChatCompletion.create(
-            model="llama3-70b-8192",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=750,
-            response_format={"type": "json_object"},
-        )
-        raw_content = res["choices"][0]["message"]["content"]
-    except OpenAIError as e:
-        return {"error": f"Groq API error: {e}", "recipes": []}
+        # -------- בניית prompt (כמו קודם) --------
+        if prev_recipe:
+            prompt = (
+                f"{SYSTEM_LINE}\n\n"
+                "You are a helpful cooking assistant.\n"
+                f"User previously received this recipe: {prev_recipe['title']}.\n\n"
+                f"User request: {user_message}\n\n"
+                f"Available ingredients: {ing_txt}\n"
+                "➤ Use any subset of these ingredients that make culinary sense together. You do not have to use them all.\n"
+                f"User {pref_txt}.\n"
+                f"{restriction_note}\n\n"
+                "TASK:\n"
+                "- If the user asks for a *completely different recipe*, suggest a recipe with a clearly different name and primary ingredients.\n"
+                "- Do not suggest something that looks or sounds similar.\n"
+                "- Use a different main protein/ingredient.\n"
+                "- Obey the user's dietary/allergy preferences.\n\n"
+                "Return RAW JSON only with this schema:\n"
+                "{\n"
+                '  "title":       <string>,\n'
+                '  "description": <string>,\n'
+                '  "difficulty":  <"Easy"|"Medium"|"Hard">,\n'
+                '  "servings":    <integer>,\n'
+                '  "prep_minutes":<integer>,\n'
+                '  "cook_minutes":<integer>,\n'
+                '  "calories_per_serving":<integer|null>,\n'
+                '  "ingredients":[{"qty":<number>,"unit":<string>,"name":<string>},...],\n'
+                '  "instructions":["Step 1 text","Step 2 text",...(8-12 items)]\n'
+                "}"
+            )
+        else:
+            prompt = (
+                f"{SYSTEM_LINE}\n\n"
+                "You are a helpful cooking assistant.\n"
+                f"User message: {user_message}\n"
+                f"Available ingredients: {ing_txt}\n"
+                "➤ Use any subset of these ingredients that make culinary sense together. You do not have to use them all.\n"
+                f"User {pref_txt}.\n"
+                f"{restriction_note}\n\n"
+                "Return RAW JSON only with this schema:\n"
+                "{\n"
+                '  "title":       <string>,\n'
+                '  "description": <string>,\n'
+                '  "difficulty":  <"Easy"|"Medium"|"Hard">,\n'
+                '  "servings":    <integer>,\n'
+                '  "prep_minutes":<integer>,\n'
+                '  "cook_minutes":<integer>,\n'
+                '  "calories_per_serving":<integer|null>,\n'
+                '  "ingredients":[{"qty":<number>,"unit":<string>,"name":<string>},...],\n'
+                '  "instructions":["Step 1 text","Step 2 text",...(8-12 items)]\n'
+                "}\n\n"
+                "Rules:\n"
+                "• Qty must be numeric + unit (g, kg, ml, l, cup, tbsp, tsp, piece).\n"
+                "• Provide 8-12 detailed steps.\n"
+                "• You may omit ingredients that are unnecessary; do not feel obliged to use every item.\n"
+            )
 
-    recipe = _extract_json(raw_content)
-
-    if recipe is None:
+        # -------- קריאה למודל --------
         try:
-            fix = openai.ChatCompletion.create(
+            res = openai.ChatCompletion.create(
                 model="llama3-70b-8192",
-                messages=[
-                    {"role": "system", "content": "Convert the following into ONE valid JSON object only, same schema, no markdown:"},
-                    {"role": "user", "content": raw_content},
-                ],
-                temperature=0.0,
-                max_tokens=400,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=750,
                 response_format={"type": "json_object"},
             )
-            recipe = _extract_json(fix["choices"][0]["message"]["content"])
-        except Exception:
-            recipe = None
+            raw_content = res["choices"][0]["message"]["content"]
 
-    if recipe is None:
-        recipe = {
-            "title": "AI Suggested Recipe",
-            "description": "Generated automatically.",
-            "difficulty": "Medium",
-            "servings": 2,
-            "prep_minutes": 15,
-            "cook_minutes": 25,
-            "calories_per_serving": None,
-            "ingredients": [{"qty": None, "unit": "", "name": n} for n in safe_inv],
-            "instructions": [raw_content],
-        }
+        except OpenAIError as e:
+            last_error = f"Groq API error ({e})"
+            if attempt < MAX_ATTEMPTS:
+                time.sleep(random.uniform(*RETRY_DELAY))
+                continue
+            return {"error": last_error, "recipes": []}
 
-    for ing in recipe.get("ingredients", []):
-        if not isinstance(ing.get("qty"), (int, float)):
-            ing["qty"], ing["unit"] = 100, "g"
+        # -------- ניסיון לפענוח JSON --------
+        recipe = _extract_json(raw_content)
 
-    if len(recipe.get("instructions", [])) < 8:
-        try:
-            fix = openai.ChatCompletion.create(
-                model="llama3-70b-8192",
-                messages=[
-                    {"role": "assistant", "content": json.dumps(recipe)},
-                    {"role": "user", "content": "Expand instructions to 8-12 detailed steps. Return JSON only."},
-                ],
-                temperature=0.3,
-                max_tokens=400,
-                response_format={"type": "json_object"},
-            )
-            fixed = _extract_json(fix["choices"][0]["message"]["content"])
-            if fixed:
-                recipe = fixed
-        except Exception:
-            pass
+        if recipe is None:
+            try:
+                fix = openai.ChatCompletion.create(
+                    model="llama3-70b-8192",
+                    messages=[
+                        {"role": "system", "content": "Convert the following into ONE valid JSON object only, same schema, no markdown:"},
+                        {"role": "user", "content": raw_content},
+                    ],
+                    temperature=0.0,
+                    max_tokens=400,
+                    response_format={"type": "json_object"},
+                )
+                recipe = _extract_json(fix["choices"][0]["message"]["content"])
+            except Exception:
+                recipe = None
 
-    return {"user_id": user_id, "recipes": [recipe]}
+        # -------- Fallback בסיסי אם עדיין None --------
+        if recipe is None:
+            last_error = "Invalid JSON from model"
+            if attempt < MAX_ATTEMPTS:
+                time.sleep(random.uniform(*RETRY_DELAY))
+                continue
+            return {"error": last_error, "recipes": []}
+
+        # -------- השלמות כמו קודם --------
+        for ing in recipe.get("ingredients", []):
+            if not isinstance(ing.get("qty"), (int, float)):
+                ing["qty"], ing["unit"] = 100, "g"
+
+        if len(recipe.get("instructions", [])) < 8:
+            try:
+                fix = openai.ChatCompletion.create(
+                    model="llama3-70b-8192",
+                    messages=[
+                        {"role": "assistant", "content": json.dumps(recipe)},
+                        {"role": "user", "content": "Expand instructions to 8-12 detailed steps. Return JSON only."},
+                    ],
+                    temperature=0.3,
+                    max_tokens=400,
+                    response_format={"type": "json_object"},
+                )
+                fixed = _extract_json(fix["choices"][0]["message"]["content"])
+                if fixed:
+                    recipe = fixed
+            except Exception:
+                pass
+
+        # אם עכשיו המתכון נראה תקין – מחזירים
+        if len(recipe.get("instructions", [])) >= 8:
+            return {"user_id": user_id, "recipes": [recipe]}
+
+        # אחרת ננסה שוב
+        last_error = "Recipe too short / invalid"
+        if attempt < MAX_ATTEMPTS:
+            time.sleep(random.uniform(*RETRY_DELAY))
+            continue
+
+    # אם הגענו לכאן – כל הניסיונות כשלו
+    return {"error": f"Groq failed after {MAX_ATTEMPTS} attempts: {last_error}", "recipes": []}

@@ -71,8 +71,13 @@ export default function Assistant() {
         recipes:  data.recipes || [],
       };
     } catch (err) {
-      console.error("❌ Error sending to AI:", err);
-      return { response: "Sorry, something went wrong.", recipes: [] };
+      const rawError = err?.message || String(err);
+      console.error("❌ Error sending to AI:", rawError);
+    
+      return {
+        response: `Sorry, something went wrong.\n\n⚠️ Error details:\n${rawError}`,
+        recipes: []
+      };
     }
   };
 

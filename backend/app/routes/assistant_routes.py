@@ -9,16 +9,18 @@ def handle_assistant():
     user_id      = data.get("user_id")
     user_message = data.get("message")
     ingredients  = data.get("ingredients", [])
-    user_prefs   = data.get("user_prefs", {})   # ◀ מגיע מה-Frontend
+    user_prefs   = data.get("user_prefs", {})      # ◀ מה-Frontend
+    prev_recipe  = data.get("prev_recipe")         # 🆕 1. חילוץ
 
     if not user_message:
         return jsonify({"error": "No message provided."}), 400
 
-    result = suggest_recipes_from_groq(
+    result = suggest_recipes_from_groq(             # 🆕 2. העברה
         user_id,
         ingredients,
         user_message,
         user_prefs,
+        prev_recipe          # ←־ כאן
     )
 
     if "error" in result:
@@ -30,5 +32,4 @@ def handle_assistant():
     return jsonify({
         "user_id": result["user_id"],
         "recipes": result["recipes"]
-        
     })
