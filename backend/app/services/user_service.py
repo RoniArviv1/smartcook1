@@ -23,7 +23,6 @@ def set_preferences(user_id: int, data: dict) -> bool:
     # 🆕  אם המשתמש לא קיים – ניצור אחד בסיסי
     if user is None:
         user = User(
-            id=user_id,
             username=f"user{user_id}",
             email=f"user{user_id}@example.com",
             password_hash=secrets.token_hex(16),   # סיסמה אקראית שלא תשמש להתחברות
@@ -35,3 +34,28 @@ def set_preferences(user_id: int, data: dict) -> bool:
     user.preferences = data
     db.session.commit()
     return True
+
+def register_user(data):
+    # בדיקה אם המייל כבר קיים
+    if User.query.filter_by(email=data['email']).first():
+        return None
+
+    # בדיקה אם שם המשתמש כבר קיים
+    if User.query.filter_by(username=data['username']).first():
+        return None
+
+    user = User(
+        username=data['username'],
+        email=data['email']
+    )
+    user.set_password(data['password'])
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+def authenticate_user(data):
+    user = User.query.filter_by(email=data['email']).first()
+    if user and user.check_password(data['password']):
+        return user
+    return None

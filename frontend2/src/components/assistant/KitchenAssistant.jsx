@@ -58,10 +58,18 @@ export default function KitchenAssistant({
   /* ────────── פרופיל ושמורים ────────── */
   const [showProfile, setShowProfile] = useState(false);
   const [profileData, setProfileData] = useState(null);
-  const [savedRecipes, setSavedRecipes] = useState(() => {
-    const saved = localStorage.getItem("smartcook_saved");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [savedRecipes, setSavedRecipes] = useState([]);
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/recipes/saved/${userId}`)
+      .then(res => res.json())
+      .then(setSavedRecipes)
+      .catch(console.error);
+  }, [userId]);
+  
+
+
+
   const [showSaved,    setShowSaved]    = useState(false);
   const [openSavedIdx, setOpenSavedIdx] = useState(null);
 
@@ -174,8 +182,16 @@ export default function KitchenAssistant({
     setter(list.includes(name) ? list.filter(i => i !== name) : [...list, name]);
 
   /* ────────── save / delete recipe ────────── */
-  const saveRecipe   = (r) => !savedRecipes.some(x => x.title === r.title) && setSavedRecipes([...savedRecipes, r]);
-  const deleteRecipe = (t) => setSavedRecipes(savedRecipes.filter(r => r.title !== t));
+  const saveRecipe = (r) => {
+    fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(r),
+    })
+      .then(() => setSavedRecipes(prev => [...prev, r]))
+      .catch(console.error);
+  };
+    const deleteRecipe = (t) => setSavedRecipes(savedRecipes.filter(r => r.title !== t));
 
   /* ═══════════════ render ═══════════════ */
   return (

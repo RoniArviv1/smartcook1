@@ -1,14 +1,36 @@
 from flask import Blueprint, request, jsonify
+from app.services.user_service import register_user, authenticate_user
+from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint('auth', __name__)
 
+
+@auth_bp.route('/register', methods=['POST'])
+def register():
+    data = request.get_json() or {}
+
+    if not data.get("username") or not data.get("email") or not data.get("password"):
+        return jsonify({"error": "Missing fields"}), 400
+
+    user = register_user(data)
+
+    if not user:
+        return jsonify({"error": "Username or email already taken"}), 409  # ⚠️ כאן
+
+    return jsonify({"message": "User registered successfully!"}), 201
+
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    data = request.get_json() or {}
+    user = authenticate_user(data)
 
-    if username == 'admin' and password == '1234':
-        return jsonify({"message": "Login successful!"}), 200
-    else:
+    if not user:
         return jsonify({"error": "Invalid credentials"}), 401
+
+    token = create_access_token(identity=user.id)
+    return jsonify({
+        "access_token": token,
+        "user_id": user.id,
+        "username": user.username
+    }), 200

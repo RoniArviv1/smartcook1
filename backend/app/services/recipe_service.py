@@ -1,8 +1,8 @@
-# services/recommendations.py  (או איפה שהקוד יושב)
 from app.models import InventoryItem
 from app.services.assistant_service import suggest_recipes_from_groq
+from app.services.saved_recipe_service import save_recipe
 
-def get_recommended_recipes(user_id: int, user_message: str, user_prefs: dict) -> list[dict]:
+def get_recommended_recipes(user_id: int, user_message: str, user_prefs: dict, save_to_db: bool = False) -> list[dict]:
     items = InventoryItem.query.filter_by(user_id=user_id).all()
     inventory = [item.name.lower() for item in items]
 
@@ -16,4 +16,10 @@ def get_recommended_recipes(user_id: int, user_message: str, user_prefs: dict) -
     if "error" in result:
         return [{"message": f"AI Error: {result['error']}"}]
 
-    return result["recipes"]
+    recipes = result["recipes"]
+
+    if save_to_db:
+        for recipe in recipes:
+            save_recipe(user_id, recipe)
+
+    return recipes

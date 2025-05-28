@@ -44,3 +44,36 @@ class InventoryItem(db.Model):
             "unit": self.unit,
             "expiration_date": self.expiration_date.strftime('%Y-%m-%d') if self.expiration_date else None
         }
+    
+class SavedRecipe(db.Model):
+    __tablename__ = 'saved_recipes'
+
+    id           = db.Column(db.Integer, primary_key=True)
+    user_id      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title        = db.Column(db.String(255), nullable=False)
+    description  = db.Column(db.Text)
+    difficulty   = db.Column(db.String(50))
+    prep_minutes = db.Column(db.Integer)
+    cook_minutes = db.Column(db.Integer)
+    servings     = db.Column(db.Integer)
+    ingredients  = db.Column(JSON)   # רשימה של dicts: {name, qty, unit}
+    instructions = db.Column(JSON)   # רשימת צעדים (strings)
+    dietary_tags = db.Column(JSON)   # תגיות דיאטה
+    image_url    = db.Column(db.String(512))
+
+    user = db.relationship('User', backref=db.backref('saved_recipes', lazy=True))
+
+    def to_dict(self):
+        return {
+            "title": self.title,
+            "description": self.description,
+            "difficulty": self.difficulty,
+            "prep_minutes": self.prep_minutes,
+            "cook_minutes": self.cook_minutes,
+            "servings": self.servings,
+            "ingredients": self.ingredients,
+            "instructions": self.instructions,
+            "dietary_tags": self.dietary_tags,
+            "image_url": self.image_url,
+        }
+
