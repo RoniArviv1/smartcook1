@@ -3,8 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  NavLink,
-  useNavigate,
+  NavLink
 } from "react-router-dom";
 
 import Login from "./pages/Login";
@@ -21,10 +20,30 @@ function NavigationBar({ isLoggedIn, username, handleLogout }) {
         <ul className="flex gap-6">
           {isLoggedIn && (
             <>
-              <li><NavLink to="/" end className={({ isActive }) => isActive ? "font-bold text-pink-500 border-b-2 border-pink-400 pb-1" : "hover:text-pink-400 transition"}>Dashboard</NavLink></li>
-              <li><NavLink to="/inventory" className={({ isActive }) => isActive ? "font-bold text-blue-500 border-b-2 border-blue-400 pb-1" : "hover:text-blue-400 transition"}>Inventory</NavLink></li>
-              <li><NavLink to="/profile" className={({ isActive }) => isActive ? "font-bold text-green-500 border-b-2 border-green-400 pb-1" : "hover:text-green-400 transition"}>Profile</NavLink></li>
-              <li><NavLink to="/assistant" className={({ isActive }) => isActive ? "font-bold text-purple-500 border-b-2 border-purple-400 pb-1" : "hover:text-purple-400 transition"}>Assistant</NavLink></li>
+              <li>
+                <NavLink to="/" end className={({ isActive }) =>
+                  isActive ? "font-bold text-pink-500 border-b-2 border-pink-400 pb-1" : "hover:text-pink-400 transition"}>
+                  Dashboard
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/inventory" className={({ isActive }) =>
+                  isActive ? "font-bold text-blue-500 border-b-2 border-blue-400 pb-1" : "hover:text-blue-400 transition"}>
+                  Inventory
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/profile" className={({ isActive }) =>
+                  isActive ? "font-bold text-green-500 border-b-2 border-green-400 pb-1" : "hover:text-green-400 transition"}>
+                  Profile
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/assistant" className={({ isActive }) =>
+                  isActive ? "font-bold text-purple-500 border-b-2 border-purple-400 pb-1" : "hover:text-purple-400 transition"}>
+                  Assistant
+                </NavLink>
+              </li>
             </>
           )}
         </ul>
@@ -57,13 +76,16 @@ export default function App() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const name = localStorage.getItem("username");
+    const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+    const name = storedUser.username || "";
+
     setIsLoggedIn(!!token);
-    setUsername(name || "");
+    setUsername(name);
   }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("smartcookUser");
     setIsLoggedIn(false);
     setUsername("");
     window.location.href = "/login";
@@ -72,7 +94,11 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-green-50 text-gray-800 font-sans">
-        <NavigationBar isLoggedIn={isLoggedIn} username={username} handleLogout={handleLogout} />
+        <NavigationBar
+          isLoggedIn={isLoggedIn}
+          username={username}
+          handleLogout={handleLogout}
+        />
         <div className="p-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -80,7 +106,12 @@ export default function App() {
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/assistant" element={<Assistant />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={
+              <Login
+                setIsLoggedIn={setIsLoggedIn}
+                setUsername={setUsername}
+              />
+            } />
             <Route path="/register" element={<Register />} />
           </Routes>
         </div>

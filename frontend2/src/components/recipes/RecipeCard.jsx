@@ -1,4 +1,3 @@
-// src/components/recipes/RecipeCard.jsx
 import React from "react";
 import {
   Timer,
@@ -11,7 +10,6 @@ import {
 export default function RecipeCard({ recipe, showRating = true }) {
   if (!recipe) return null;
 
-  /* ---------- דסטרקטור + ערכי ברירת-מחדל ---------- */
   const {
     title = "AI Suggested Recipe",
     description = "",
@@ -22,13 +20,15 @@ export default function RecipeCard({ recipe, showRating = true }) {
     prep_minutes = 15,
     cook_minutes = 25,
     dietary_tags = [],
+    ingredients = [],
+    instructions = [],
   } = recipe;
 
   const totalMinutes = prep_minutes + cook_minutes;
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
-      {/* ---------- תמונה ---------- */}
+    <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 bg-white">
+      {/* תמונה */}
       <div className="aspect-video relative overflow-hidden bg-gray-100">
         {image_url ? (
           <img
@@ -50,14 +50,12 @@ export default function RecipeCard({ recipe, showRating = true }) {
         )}
       </div>
 
-      {/* ---------- תוכן הכרטיס ---------- */}
+      {/* תוכן */}
       <div className="p-4">
         <h3 className="font-semibold text-lg mb-1">{title}</h3>
 
         {description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {description}
-          </p>
+          <p className="text-sm text-gray-600 mb-3">{description}</p>
         )}
 
         <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
@@ -75,7 +73,34 @@ export default function RecipeCard({ recipe, showRating = true }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* רכיבים */}
+        {ingredients.length > 0 && (
+          <div className="mb-3">
+            <h4 className="font-semibold text-sm mb-1">Ingredients:</h4>
+            <ul className="list-disc list-inside text-sm text-gray-700">
+              {ingredients.map((ing, i) => (
+                <li key={i}>
+                  {ing.qty} {ing.unit} {ing.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* הוראות */}
+        {instructions.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-sm mb-1">Instructions:</h4>
+            <ol className="list-decimal list-inside text-sm text-gray-700">
+              {instructions.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* תגיות תזונתיות */}
+        <div className="flex flex-wrap gap-2 mt-3">
           {dietary_tags.length ? (
             dietary_tags.map((tag) => (
               <span

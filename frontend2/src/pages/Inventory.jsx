@@ -14,7 +14,7 @@ export default function Inventory() {
   /* ① חילוץ user_id  (מ-localStorage או קבוע לפיתוח) */
   const storedUser =
     JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
-  const userId = storedUser.id || 1;   // fallback ל-1 בזמן פיתוח
+  const userId =  storedUser.user_id || storedUser.id || 1;;   // fallback ל-1 בזמן פיתוח
 
   /** ------------------------------------------------------------------ */
   /**                   טעינת מלאי מה-Backend                            */
@@ -46,7 +46,10 @@ export default function Inventory() {
   /**                     הוספת פריט חדש                                 */
   /** ------------------------------------------------------------------ */
   const handleAddIngredient = async (ingredient) => {
-    console.log("📤 Sending ingredient to backend:", ingredient);
+    console.log("📤 Sending ingredient to backend:", {
+      ...ingredient,
+      user_id: userId
+    });
     try {
       const res = await fetch(
         `http://localhost:5000/api/inventory/${userId}`,

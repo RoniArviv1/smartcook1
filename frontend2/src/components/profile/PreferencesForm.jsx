@@ -10,10 +10,15 @@ export default function Profile() {
     mealPrep: ''
   });
 
+  // 🧠 חילוץ user_id מה-localStorage
+  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+  const userId = storedUser.user_id || 1;
+
+  // 🔄 שליפת העדפות
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/profile/1');
+        const res = await fetch(`http://localhost:5000/api/profile/${userId}`);
         if (!res.ok) throw new Error('Failed to fetch preferences');
         const data = await res.json();
         setPreferences(data);
@@ -23,11 +28,12 @@ export default function Profile() {
       }
     };
     fetchPreferences();
-  }, []);
+  }, [userId]);
 
+  // 💾 שמירת העדפות
   const handleSavePreferences = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/profile/1', {
+      const response = await fetch(`http://localhost:5000/api/profile/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences)
@@ -40,6 +46,7 @@ export default function Profile() {
     }
   };
 
+  // ⬜ בחירה/הסרה מרשימות
   const toggleSelection = (type, value) => {
     setPreferences(prev => {
       const updated = prev[type].includes(value)
@@ -63,15 +70,7 @@ export default function Profile() {
           <div className="mb-6">
             <h3 className="font-medium mb-2">Dietary Restrictions</h3>
             <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
-              {[
-                'Vegetarian',
-                'Vegan',
-                'Gluten Free',
-                'Kosher',
-                'Halal',
-                'Keto',
-                'Paleo'
-              ].map(item => (
+              {['Vegetarian','Vegan','Gluten Free','Kosher','Halal','Keto','Paleo'].map(item => (
                 <label key={item}>
                   <input
                     type="checkbox"
@@ -89,16 +88,7 @@ export default function Profile() {
           <div className="mb-6">
             <h3 className="font-medium mb-2">Allergies</h3>
             <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
-              {[
-                'Peanuts',
-                'Tree Nuts',
-                'Dairy',
-                'Eggs',
-                'Wheat',
-                'Soy',
-                'Fish',
-                'Sesame'
-              ].map(item => (
+              {['Peanuts','Tree Nuts','Dairy','Eggs','Wheat','Soy','Fish','Sesame'].map(item => (
                 <label key={item}>
                   <input
                     type="checkbox"

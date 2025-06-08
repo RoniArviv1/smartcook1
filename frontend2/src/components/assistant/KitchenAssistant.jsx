@@ -98,6 +98,18 @@ export default function KitchenAssistant({
   };
 
   const sendUserMessage = async (msg) => {
+    if (!inventory || inventory.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "assistant",
+          content:
+            "🧺 It looks like your ingredient list is empty. Please add some ingredients to your inventory so I can recommend a recipe 😊",
+        },
+      ]);
+      return;
+    }
+  
     setMessages(prev => [...prev, { type: "user", content: msg }]);
     const res = await onSendMessage(msg, messages.slice(-4));
     setMessages(prev => [
@@ -143,15 +155,42 @@ export default function KitchenAssistant({
   /* ────────── Exclude / Include / Cuisine combined submit ────────── */
   const submitExclude = async () => {
     if (!excludedItems.length) return;
+  
+    // 🧠 רכיבים שלא ניתן לבשל מהם מתכון לבד
+    const NON_STANDALONE_INGREDIENTS = [
+      "butter", "salt", "pepper", "oil", "spices", "sugar", "water"
+    ];
+  
+    // 🧮 סינון רכיבים שמישרים אחרי ההחרגה
+    const remainingIngredients = inventory
+      .map(it => it.name.toLowerCase())
+      .filter(name => !excludedItems.map(e => e.toLowerCase()).includes(name))
+      .filter(name => !NON_STANDALONE_INGREDIENTS.includes(name));
+  
+    if (remainingIngredients.length === 0) {
+      setMessages(prev => [
+        ...prev,
+        {
+          type: "assistant",
+          content:
+            "❗ After excluding ingredients, only unusable items remain (like butter or spices). Please keep at least one usable ingredient for a proper recipe.",
+        },
+      ]);
+      setAwaitingExclusion(false);
+      setExcludedItems([]);
+      return;
+    }
+  
     const txt = buildMods()
       ? `Please make the last recipe ${buildMods()} and exclude: ${excludedItems.join(", ")}.`
       : `Please adjust the last recipe to exclude: ${excludedItems.join(", ")}.`;
+  
     await sendUserMessage(txt);
     setAwaitingExclusion(false);
     setExcludedItems([]);
     resetMods();
   };
-
+  
   const submitInclude = async () => {
     if (!includeItems.length) return;
     const txt = buildMods()

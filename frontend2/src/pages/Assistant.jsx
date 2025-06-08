@@ -6,7 +6,7 @@ import KitchenAssistant from "../components/assistant/KitchenAssistant";
 /*         חילוץ user_id (JWT / localStorage)                  */
 /* ----------------------------------------------------------- */
 const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
-const userId = storedUser.id || 1;
+const userId = storedUser.user_id|| 1;
 const userName = storedUser.name || "SmartCook User";
 
 export default function Assistant() {

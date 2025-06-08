@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import RecommendedRecipes from "../components/dashboard/RecommendedRecipes";
-import TopRecipes from "../components/dashboard/TopRecipes";
+// import TopRecipes from "../components/dashboard/TopRecipes"; // ← הוסר זמנית
 import InventoryStatus from "../components/dashboard/InventoryStatus";
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const [recipes, setRecipes] = useState([]);
-  const [topRecipes, setTopRecipes] = useState([]);
+  // const [topRecipes, setTopRecipes] = useState([]); // ← לא בשימוש כרגע
   const [inventory, setInventory] = useState([]);
   const [userPrefs, setUserPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,34 +17,42 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     setLoading(true);
+
+    const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+    const userId = storedUser.user_id || 1;
+
     try {
-      const [recipesRes, topRes, prefsRes, inventoryRes] = await Promise.all([
-        fetch("http://localhost:5000/api/recommendations"),
-        fetch("http://localhost:5000/api/top-recipes"),
-        fetch("http://localhost:5000/api/profile"),
-        fetch("http://localhost:5000/api/inventory")
+      const [recipesRes, prefsRes, inventoryRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/recipes/recommended/${userId}`),
+        fetch(`http://localhost:5000/api/profile/${userId}`),
+        fetch(`http://localhost:5000/api/inventory/${userId}`)
       ]);
 
-      const [recipesData, topData, prefsData, inventoryData] = await Promise.all([
+      if (![recipesRes, prefsRes, inventoryRes].every(r => r.ok)) {
+        throw new Error("One or more API requests failed.");
+      }
+
+      const [recipesData, prefsData, inventoryData] = await Promise.all([
         recipesRes.json(),
-        topRes.json(),
         prefsRes.json(),
         inventoryRes.json()
       ]);
 
-      setRecipes(recipesData);
-      setTopRecipes(topData);
+      console.log("📥 Recipes from backend:", recipesData);
+
+      setRecipes(Array.isArray(recipesData.recipes) ? recipesData.recipes : []);
       setUserPrefs(prefsData);
-      setInventory(inventoryData);
+      setInventory(Array.isArray(inventoryData) ? inventoryData : []);
     } catch (error) {
-      console.error("Error loading dashboard data:", error);
+      console.error("❌ Error loading dashboard data:", error);
     }
+
     setLoading(false);
   };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <motion.h1 
+      <motion.h1
         className="text-4xl font-bold text-pink-400 mb-8 flex items-center gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -56,7 +64,7 @@ export default function Dashboard() {
         {/* Main Content */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="bg-white/70 rounded-xl p-6 shadow">
-            <RecommendedRecipes 
+            <RecommendedRecipes
               recipes={recipes}
               userPrefs={userPrefs}
               inventory={inventory}
@@ -64,12 +72,12 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="bg-white/70 rounded-xl p-6 shadow">
+          {/* <div className="bg-white/70 rounded-xl p-6 shadow">
             <TopRecipes 
               recipes={topRecipes}
               loading={loading}
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Sidebar */}

@@ -8,7 +8,7 @@ export default function Profile() {
   /* --------------------------------------------------------------- */
   const storedUser =
     JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
-  const userId = storedUser.id || 1;     // fallback ל-1 בפיתוח
+  const userId =  storedUser.user_id || storedUser.id || 1;;   // fallback ל-1 בזמן פיתוח
 
   /* --------------------------------------------------------------- */
   /*                             STATE                               */

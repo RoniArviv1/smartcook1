@@ -1,33 +1,46 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Login() {
-  const [email, setEmail]       = useState('');
+export default function Login({ setIsLoggedIn, setUsername }) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
 
-    const res = await fetch('http://localhost:5000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.status === 200 && data.access_token) {
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user_id', data.user_id);
-      localStorage.setItem('username', data.username);
-      window.location.href = "/";
-    } else if (res.status === 401) {
-      setError("Invalid email or password.");
-    } else {
-      setError(data.error || "Login failed.");
+      if (res.status === 200 && data.access_token) {
+        localStorage.setItem('smartcookUser', JSON.stringify({
+          user_id: data.user_id,
+          username: data.username
+        }));
+        localStorage.setItem('token', data.access_token);
+
+        // ⬅️ עדכון state באפליקציה
+        setIsLoggedIn(true);
+        setUsername(data.username);
+
+        navigate('/');
+      } else if (res.status === 401) {
+        setError("Invalid email or password.");
+      } else {
+        setError(data.error || "Login failed.");
+      }
+
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Connection failed.");
     }
   };
 

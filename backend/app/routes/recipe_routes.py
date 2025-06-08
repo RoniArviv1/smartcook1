@@ -13,10 +13,9 @@ recipe_bp = Blueprint('recipe', __name__)
 
 
 # 🔸 קבלת המלצות מבוססות מלאי והעדפות משתמש
-@recipe_bp.route('/recommended', methods=['GET'])
+@recipe_bp.route('/recommended/<int:user_id>', methods=['GET'])
 # @jwt_required()
-def recommended_recipes():
-    user_id = 1  # מזהה זמני בזמן פיתוח
+def recommended_recipes(user_id):
     print("📥 GET /recommended by user", user_id)
 
     user_message = "Get me a recipe using my preferences and ingredients."
