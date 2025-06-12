@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
 from app.services.assistant_service import suggest_recipes_from_groq
+from app.services.global_cache import CACHE
 
 assistant_bp = Blueprint("assistant", __name__)
 
-@assistant_bp.route("/assistant", methods=["POST"])
+@assistant_bp.route("/assistant/<int:user_id>", methods=["POST"])
 def handle_assistant():
     data         = request.get_json()
     user_id      = data.get("user_id")
@@ -33,3 +34,7 @@ def handle_assistant():
         "user_id": result["user_id"],
         "recipes": result["recipes"]
     })
+@assistant_bp.route("/assistant/refresh/<int:user_id>", methods=["POST"])
+def refresh_recommendations(user_id):
+    CACHE.pop(user_id, None)
+    return jsonify({"message": "Recommendations cache cleared."}), 200

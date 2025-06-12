@@ -4,15 +4,18 @@ import { Apple, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function InventoryStatus({ inventory, loading }) {
+  // ✅ הבטחה ש-inventory הוא מערך תקין
+  const safeInventory = Array.isArray(inventory) ? inventory : [];
+
   const getExpiringIngredients = () => {
-    return inventory
+    return safeInventory
       .filter((ing) => ing.expiry_date)
       .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date))
       .slice(0, 5);
   };
 
   const getLowStock = () => {
-    return inventory.filter((ing) => ing.quantity <= 2).slice(0, 5);
+    return safeInventory.filter((ing) => ing.quantity <= 2).slice(0, 5);
   };
 
   return (

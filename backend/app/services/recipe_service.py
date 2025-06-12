@@ -1,5 +1,6 @@
-from app.models import InventoryItem
+from app.services.global_cache import CACHE
 from app.services.assistant_service import suggest_recipes_from_groq
+from app.models import InventoryItem
 from app.services.saved_recipe_service import save_recipe
 
 def get_recommended_recipes(
@@ -7,9 +8,12 @@ def get_recommended_recipes(
     user_message: str,
     user_prefs: dict,
     save_to_db: bool = False,
-    num_recipes: int = 2
+    num_recipes: int = 3
 ) -> list[dict]:
-    # שליפת המלאי
+    # שליפת קאש אם קיים
+    if user_id in CACHE:
+        return CACHE[user_id]
+
     items = InventoryItem.query.filter_by(user_id=user_id).all()
     inventory = [item.name.lower() for item in items]
 
@@ -30,20 +34,20 @@ def get_recommended_recipes(
         )
 
         if "error" in result:
-            break  # עצור אם הייתה שגיאה חמורה
+            break
 
         for recipe in result.get("recipes", []):
             title = recipe.get("title", "").strip().lower()
             if title and title not in seen_titles:
                 recipes.append(recipe)
                 seen_titles.add(title)
-                break  # נעבור לניסיון הבא רק אחרי שהוספנו חדש
+                break
 
         attempts += 1
 
-    # שמירה למסד נתונים אם צריך
     if save_to_db:
         for recipe in recipes:
             save_recipe(user_id, recipe)
 
-    return recipes if recipes else [{"message": "No recipes generated."}]
+    CACHE[user_id] = recipes if recipes else [{"message": "No recipes generated."}]
+    return CACHE[user_id]
