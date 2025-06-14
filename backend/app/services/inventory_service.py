@@ -9,8 +9,8 @@ def add_inventory_item(user_id, data):
     print("Received data:", data)   # בדיקה
 
     expiration_date = None
-    if data.get('expiry_date'):
-        expiration_date = datetime.fromisoformat(data['expiry_date'])
+    if data.get('expiration_date'):
+        expiration_date = datetime.fromisoformat(data['expiration_date'])
 
     item = InventoryItem(
         user_id=user_id,

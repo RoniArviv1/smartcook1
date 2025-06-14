@@ -25,7 +25,7 @@ def recommended_recipes(user_id):
         user_id=user_id,
         user_message=user_message,
         user_prefs=user_prefs,
-        save_to_db=True  # שומר את ההמלצות אוטומטית במסד הנתונים
+        save_to_db=False  # שומר את ההמלצות אוטומטית במסד הנתונים
     )
 
     print("✅ Recommended recipes:", recommended)

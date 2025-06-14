@@ -11,7 +11,6 @@ from app.routes.notification_routes import notification_bp
 from app.routes.recipe_routes       import recipe_bp
 from app.routes.user_routes         import user_bp
 
-
 def create_app():
     app = Flask(__name__)
 
@@ -20,19 +19,16 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')
 
-    # CORS configuration
+    # ✅ CORS – simplified and effective
     CORS(app, resources={r"/api/*": {
         "origins": [
             "http://localhost:3000",
-            "http://localhost:3002",
-            "http://localhost:5000"
+            "http://localhost:3002"
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True,
-        "send_wildcard": False,
-        "vary_header": True,
+        "supports_credentials": True
     }})
 
     # Init extensions
@@ -40,12 +36,12 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # Blueprint registration (with url_prefix)
+    # Register Blueprints
     app.register_blueprint(assistant_bp,    url_prefix='/api')
     app.register_blueprint(auth_bp,         url_prefix='/api/auth')
     app.register_blueprint(inventory_bp,    url_prefix='/api/inventory')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(recipe_bp,       url_prefix='/api/recipes')
-    app.register_blueprint(user_bp,         url_prefix='/api/profile')  # keep /api/profile for compatibility
+    app.register_blueprint(user_bp,         url_prefix='/api/profile')
 
     return app

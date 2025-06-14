@@ -9,7 +9,7 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
     category: "",
     quantity: "",
     unit: "",
-    expiry_date: ""
+    expiration_date: ""
   });
 
   const handleSubmit = (e) => {
@@ -91,12 +91,12 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
 
         {/* Expiry Date */}
         <div>
-          <label htmlFor="expiry_date">Expiry Date</label>
+          <label htmlFor="expiration_date">Expiry Date</label>
           <input
-            id="expiry_date"
+            id="expiration_date"
             type="date"
-            value={form.expiry_date}
-            onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
+            value={form.expiration_date}
+            onChange={(e) => setForm({ ...form, expiration_date: e.target.value })}
             style={{ width: "100%", padding: "6px" }}
           />
         </div>

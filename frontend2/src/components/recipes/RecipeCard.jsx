@@ -1,14 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Timer,
   Users,
   ChefHat,
   Star,
   Image as ImageIcon,
+  Save,
+  Check,
 } from "lucide-react";
+import { fetchImage } from "../../utils/fetchImage";
 
-export default function RecipeCard({ recipe, showRating = true }) {
-  if (!recipe) return null;
+export default function RecipeCard({ recipe, showRating = true, userId }) {
+  const [fallbackImage, setFallbackImage] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const [saved, setSaved] = useState(false); // 🆕 אם נשמר כבר
 
   const {
     title = "AI Suggested Recipe",
@@ -22,99 +27,147 @@ export default function RecipeCard({ recipe, showRating = true }) {
     dietary_tags = [],
     ingredients = [],
     instructions = [],
-  } = recipe;
+  } = recipe || {};
 
   const totalMinutes = prep_minutes + cook_minutes;
 
+  useEffect(() => {
+    if (!image_url && title) {
+      fetchImage(title).then((url) => {
+        if (url) setFallbackImage(url);
+      });
+    }
+  }, [image_url, title]);
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(recipe),
+      });
+      if (res.ok) setSaved(true);
+    } catch (err) {
+      console.error("❌ Failed to save recipe:", err);
+    }
+  };
+
+  if (!recipe) return null;
+
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 bg-white">
-      {/* תמונה */}
-      <div className="aspect-video relative overflow-hidden bg-gray-100">
-        {image_url ? (
+    <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 bg-white max-w-sm text-sm">
+      <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+        {image_url || fallbackImage ? (
           <img
-            src={image_url}
+            src={image_url || fallbackImage}
             alt={title}
             className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full text-gray-400">
-            <ImageIcon className="w-12 h-12" />
+            <ImageIcon className="w-8 h-8" />
           </div>
         )}
-
         {showRating && average_rating > 0 && (
-          <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full flex items-center gap-1 text-sm">
-            <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-400" />
+          <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs">
+            <Star className="w-3 h-3 fill-yellow-400 stroke-yellow-400" />
             {average_rating.toFixed(1)}
           </div>
         )}
       </div>
 
-      {/* תוכן */}
-      <div className="p-4">
-        <h3 className="font-semibold text-lg mb-1">{title}</h3>
+      <div className="p-3">
+        <h3 className="font-semibold text-base mb-1 leading-tight line-clamp-2">
+          {title}
+        </h3>
 
         {description && (
-          <p className="text-sm text-gray-600 mb-3">{description}</p>
+          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{description}</p>
         )}
 
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+        <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
           <div className="flex items-center gap-1">
-            <Timer className="w-4 h-4" />
+            <Timer className="w-3 h-3" />
             {totalMinutes} min
           </div>
           <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            {servings} servings
+            <Users className="w-3 h-3" />
+            {servings}
           </div>
           <div className="flex items-center gap-1 capitalize">
-            <ChefHat className="w-4 h-4" />
+            <ChefHat className="w-3 h-3" />
             {difficulty}
           </div>
         </div>
 
-        {/* רכיבים */}
-        {ingredients.length > 0 && (
-          <div className="mb-3">
-            <h4 className="font-semibold text-sm mb-1">Ingredients:</h4>
-            <ul className="list-disc list-inside text-sm text-gray-700">
-              {ingredients.map((ing, i) => (
-                <li key={i}>
-                  {ing.qty} {ing.unit} {ing.name}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {expanded && (
+          <>
+            {ingredients.length > 0 && (
+              <div className="mb-2">
+                <h4 className="font-semibold text-xs mb-1">Ingredients:</h4>
+                <ul className="list-disc list-inside text-xs text-gray-700">
+                  {ingredients.map((ing, i) => (
+                    <li key={i}>
+                      {ing.qty} {ing.unit} {ing.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {instructions.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-xs mb-1">Instructions:</h4>
+                <ol className="list-decimal list-inside text-xs text-gray-700">
+                  {instructions.map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </>
         )}
 
-        {/* הוראות */}
-        {instructions.length > 0 && (
-          <div>
-            <h4 className="font-semibold text-sm mb-1">Instructions:</h4>
-            <ol className="list-decimal list-inside text-sm text-gray-700">
-              {instructions.map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <button
+          className="text-orange-600 text-xs mt-1 hover:underline"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "See less" : "See more"}
+        </button>
 
-        {/* תגיות תזונתיות */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          {dietary_tags.length ? (
-            dietary_tags.map((tag) => (
-              <span
-                key={tag}
-                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs capitalize"
-              >
-                {tag.replace("_", " ")}
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex flex-wrap gap-2">
+            {dietary_tags.length ? (
+              dietary_tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-[10px] capitalize"
+                >
+                  {tag.replace("_", " ")}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-400 text-xs">
+                No dietary tags specified
               </span>
-            ))
-          ) : (
-            <span className="text-gray-500 text-sm">
-              No dietary tags specified
-            </span>
-          )}
+            )}
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saved}
+            className="text-xs text-orange-600 flex items-center gap-1 hover:underline disabled:text-gray-400"
+          >
+            {saved ? (
+              <>
+                <Check className="w-3 h-3" /> Saved
+              </>
+            ) : (
+              <>
+                <Save className="w-3 h-3" /> Save
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

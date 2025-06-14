@@ -17,7 +17,7 @@ def get_inventory(user_id):
             "category": item.category,
             "quantity": item.quantity,
             "unit": item.unit,
-            "expiry_date": item.expiration_date.isoformat()
+            "expiration_date": item.expiration_date.isoformat()
             if item.expiration_date
             else None,
         }
@@ -38,7 +38,7 @@ def add_item(user_id):
                 "category": item.category,
                 "quantity": item.quantity,
                 "unit": item.unit,
-                "expiry_date": item.expiration_date.isoformat()
+                "expiration_date": item.expiration_date.isoformat()
                 if item.expiration_date
                 else None,
             }
@@ -67,8 +67,8 @@ def update_item(user_id, item_id):
     item.quantity = data.get("quantity", item.quantity)
     item.unit = data.get("unit", item.unit)
 
-    if data.get("expiry_date"):
-        item.expiration_date = datetime.fromisoformat(data["expiry_date"])
+    if data.get("expiration_date"):
+        item.expiration_date = datetime.fromisoformat(data["expiration_date"])
 
     db.session.commit()
     return jsonify(message="Item updated successfully"), 200

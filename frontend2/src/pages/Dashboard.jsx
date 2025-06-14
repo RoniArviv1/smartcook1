@@ -36,10 +36,17 @@ export default function Dashboard() {
         inventoryRes.json()
       ]);
 
-      // ✅ תיקונים חשובים כאן:
       setRecipes(Array.isArray(recipesData.recipes) ? recipesData.recipes : []);
       setUserPrefs(prefsData);
-      setInventory(Array.isArray(inventoryData) ? inventoryData : []);
+
+      const rawInventory = inventoryData.inventory || [];
+      const cleanedInventory = rawInventory.map((item) => ({
+        ...item,
+        expiration_date: item.expiration_date || item.expiry_date || null
+      }));
+
+      console.log("✅ Inventory loaded:", cleanedInventory);
+      setInventory(cleanedInventory);
     } catch (error) {
       console.error("Dashboard load error:", error);
     } finally {
@@ -47,13 +54,12 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ פונקציה לרענון המלצות
   const refreshRecommendations = async () => {
     try {
       await fetch(`http://localhost:5000/api/assistant/refresh/${userId}`, {
-        method: "POST",
+        method: "POST"
       });
-      loadDashboardData(); // טען מחדש את ההמלצות
+      loadDashboardData();
     } catch (error) {
       console.error("Error refreshing recommendations:", error);
     }
@@ -63,7 +69,6 @@ export default function Dashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-4">Welcome to SmartCook</h1>
 
-      {/* 🔄 כפתור רענון */}
       <button
         onClick={refreshRecommendations}
         className="mb-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg shadow"
@@ -71,7 +76,7 @@ export default function Dashboard() {
         🔄 Refresh Recommendations
       </button>
 
-      <RecommendedRecipes recipes={recipes} loading={loading} />
+      <RecommendedRecipes recipes={recipes} loading={loading} userId={userId} />
       <InventoryStatus inventory={inventory} loading={loading} />
     </div>
   );

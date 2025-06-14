@@ -230,7 +230,23 @@ export default function KitchenAssistant({
       .then(() => setSavedRecipes(prev => [...prev, r]))
       .catch(console.error);
   };
-    const deleteRecipe = (t) => setSavedRecipes(savedRecipes.filter(r => r.title !== t));
+    const deleteRecipe = async (title) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    if (res.ok) {
+      setSavedRecipes(savedRecipes.filter((r) => r.title !== title));
+    } else {
+      console.error("❌ Failed to delete from server");
+    }
+  } catch (err) {
+    console.error("❌ Failed to delete recipe:", err);
+  }
+};
+
 
   /* ═══════════════ render ═══════════════ */
   return (

@@ -2,6 +2,7 @@ from app.services.global_cache import CACHE
 from app.services.assistant_service import suggest_recipes_from_groq
 from app.models import InventoryItem
 from app.services.saved_recipe_service import save_recipe
+from datetime import datetime
 
 def get_recommended_recipes(
     user_id: int,
@@ -15,7 +16,11 @@ def get_recommended_recipes(
         return CACHE[user_id]
 
     items = InventoryItem.query.filter_by(user_id=user_id).all()
-    inventory = [item.name.lower() for item in items]
+    today = datetime.utcnow().date()
+
+    # סינון מצרכים שפג תוקפם
+    valid_items = [item for item in items if not item.expiration_date or item.expiration_date >= today]
+    inventory = [item.name.lower() for item in valid_items]
 
     recipes = []
     seen_titles = set()
@@ -30,7 +35,7 @@ def get_recommended_recipes(
             ingredients=inventory,
             user_message=user_message,
             user_prefs=user_prefs,
-            prev_recipe=prev_recipe
+            prev_recipe=prev_recipe,
         )
 
         if "error" in result:
