@@ -1,18 +1,19 @@
 import React, { useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, ChefHat, Clock } from "lucide-react";
 import Button from "../ui/button";
+import RatingStars from "../ui/RatingStars";
 
 /* helper – מפצל טקסט בודד לצעדים */
 const splitSteps = (text) =>
   String(text)
-    .replace(/\*\*/g, "")          // מסיר **bold**
+    .replace(/\*\*/g, "") // מסיר **bold**
     .replace(/\\n/g, "\n")
     .split(/(?:\n+|\r+|^\d+\.\s+|\s*\d+\)\s+)/)
     .map((s) => s.trim())
     .filter(Boolean);
 
 /* Tailwind badge utility (שמור ב-JSX-style בסוף הקובץ) */
-export default function SuggestedRecipes({ recipes = [], onSave = () => {} }) {
+export default function SuggestedRecipes({ recipes = [], onSave = () => {}, userId }) {
   const [open, setOpen] = useState(null);
   const toggle = useCallback((i) => setOpen((p) => (p === i ? null : i)), []);
 
@@ -67,6 +68,9 @@ export default function SuggestedRecipes({ recipes = [], onSave = () => {} }) {
             {open === i && (
               <div className="mt-4 space-y-4 text-sm">
                 {r.description && <p>{r.description}</p>}
+
+                {/* ⭐ דירוג כוכבים אינטראקטיבי */}
+                <RatingStars recipe={r} userId={userId} />
 
                 {/* ingredients */}
                 <div>

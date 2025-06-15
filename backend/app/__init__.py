@@ -2,6 +2,8 @@ from flask import Flask
 from flask_cors import CORS
 from app.extensions import db, migrate, jwt
 import os
+from app.routes.rating_routes import rating_bp
+
 
 # Blueprint imports (deferred to avoid circular)
 from app.routes.assistant_routes    import assistant_bp
@@ -43,5 +45,7 @@ def create_app():
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(recipe_bp,       url_prefix='/api/recipes')
     app.register_blueprint(user_bp,         url_prefix='/api/profile')
+    app.register_blueprint(rating_bp, url_prefix='/api')
+
 
     return app

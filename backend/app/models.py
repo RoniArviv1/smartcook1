@@ -1,6 +1,27 @@
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSON
+from datetime import datetime
+from app.utils.recipe_hash import generate_recipe_hash  # אם יש צורך שימושי בעתיד
+
+class RecipeRating(db.Model):
+    __tablename__ = 'recipe_ratings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipe_hash = db.Column(db.String(64), nullable=False)  # מזהה ייחודי למתכון
+    rating = db.Column(db.Integer, nullable=False)  # 1 עד 5
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('recipe_ratings', lazy=True))
+
+    def to_dict(self):
+        return {
+            "recipe_hash": self.recipe_hash,
+            "rating": self.rating,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
 
 
 class User(db.Model):

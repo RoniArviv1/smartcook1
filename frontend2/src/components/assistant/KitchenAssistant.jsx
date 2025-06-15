@@ -295,7 +295,7 @@ export default function KitchenAssistant({
                 }}
               />
               {m.suggestedRecipes && (
-                <SuggestedRecipes recipes={m.suggestedRecipes} onSave={saveRecipe} />
+                <SuggestedRecipes recipes={m.suggestedRecipes} onSave={saveRecipe} userId={userId} />
               )}
             </div>
           ))}

@@ -9,11 +9,14 @@ import {
   Check,
 } from "lucide-react";
 import { fetchImage } from "../../utils/fetchImage";
+import RatingStars from "../ui/RatingStars";
 
 export default function RecipeCard({ recipe, showRating = true, userId }) {
   const [fallbackImage, setFallbackImage] = useState(null);
   const [expanded, setExpanded] = useState(false);
-  const [saved, setSaved] = useState(false); // 🆕 אם נשמר כבר
+  const [saved, setSaved] = useState(false);
+  const [average, setAverage] = useState(0);
+  const [numRatings, setNumRatings] = useState(0);
 
   const {
     title = "AI Suggested Recipe",
@@ -27,6 +30,7 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
     dietary_tags = [],
     ingredients = [],
     instructions = [],
+    recipe_hash,
   } = recipe || {};
 
   const totalMinutes = prep_minutes + cook_minutes;
@@ -38,6 +42,17 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
       });
     }
   }, [image_url, title]);
+
+  useEffect(() => {
+    if (recipe_hash) {
+      fetch(`http://localhost:5000/api/recipes/average-rating/${recipe_hash}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setAverage(data.average_rating);
+          setNumRatings(data.num_ratings);
+        });
+    }
+  }, [recipe_hash]);
 
   const handleSave = async () => {
     try {
@@ -68,10 +83,10 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
             <ImageIcon className="w-8 h-8" />
           </div>
         )}
-        {showRating && average_rating > 0 && (
+        {showRating && average > 0 && (
           <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs">
             <Star className="w-3 h-3 fill-yellow-400 stroke-yellow-400" />
-            {average_rating.toFixed(1)}
+            {average.toFixed(1)} ({numRatings})
           </div>
         )}
       </div>
@@ -80,6 +95,9 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
         <h3 className="font-semibold text-base mb-1 leading-tight line-clamp-2">
           {title}
         </h3>
+
+        {/* ⭐ דירוג כוכבים אינטראקטיבי */}
+        <RatingStars recipe={recipe} userId={userId} />
 
         {description && (
           <p className="text-xs text-gray-600 mb-2 line-clamp-2">{description}</p>
