@@ -20,23 +20,20 @@ export default function Dashboard() {
     setLoading(true);
 
     try {
-      const [recipesRes, prefsRes, inventoryRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/recipes/recommended/${userId}`),
+      const [prefsRes, inventoryRes] = await Promise.all([
         fetch(`http://localhost:5000/api/profile/${userId}`),
         fetch(`http://localhost:5000/api/inventory/${userId}`)
       ]);
 
-      if (![recipesRes, prefsRes, inventoryRes].every(r => r.ok)) {
-        throw new Error("One or more API requests failed.");
+      if (![prefsRes, inventoryRes].every(r => r.ok)) {
+        throw new Error("Profile or inventory API request failed.");
       }
 
-      const [recipesData, prefsData, inventoryData] = await Promise.all([
-        recipesRes.json(),
+      const [prefsData, inventoryData] = await Promise.all([
         prefsRes.json(),
         inventoryRes.json()
       ]);
 
-      setRecipes(Array.isArray(recipesData.recipes) ? recipesData.recipes : []);
       setUserPrefs(prefsData);
 
       const rawInventory = inventoryData.inventory || [];
@@ -47,6 +44,25 @@ export default function Dashboard() {
 
       console.log("✅ Inventory loaded:", cleanedInventory);
       setInventory(cleanedInventory);
+
+      // ✨ קריאת מתכונים עם userPrefs
+      const recipesRes = await fetch(`http://localhost:5000/api/recipes/recommended`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          user_message: "What can I cook today?",
+          user_prefs: prefsData,
+          num_recipes: 3
+        })
+      });
+
+      const recipesData = await recipesRes.json();
+      console.log("🔍 Recipes received:", recipesData.recipes);
+      console.log("🔢 Requested:", 3, "| Received:", recipesData.recipes?.length);
+      setRecipes(Array.isArray(recipesData.recipes) ? recipesData.recipes : []);
+
+
     } catch (error) {
       console.error("Dashboard load error:", error);
     } finally {
@@ -55,15 +71,30 @@ export default function Dashboard() {
   };
 
   const refreshRecommendations = async () => {
-    try {
-      await fetch(`http://localhost:5000/api/assistant/refresh/${userId}`, {
-        method: "POST"
-      });
-      loadDashboardData();
-    } catch (error) {
-      console.error("Error refreshing recommendations:", error);
+  try {
+    const res = await fetch(`http://localhost:5000/api/assistant/refresh/${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_prefs: userPrefs,
+        user_message: "What can I cook today?"
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && Array.isArray(data.recipes)) {
+      console.log("🔄 Refreshed recipes received:", data.recipes);
+      setRecipes(data.recipes);  // 👈 שמירה ישירה ל־state
+    } else {
+      console.warn("⚠️ No recipes received from refresh.");
     }
-  };
+  } catch (error) {
+    console.error("Error refreshing recommendations:", error);
+  }
+};
+
+
 
   return (
     <div>

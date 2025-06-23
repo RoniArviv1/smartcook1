@@ -22,7 +22,6 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
     title = "AI Suggested Recipe",
     description = "",
     image_url,
-    average_rating = 0,
     servings = 2,
     difficulty = "Medium",
     prep_minutes = 15,
@@ -43,15 +42,19 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
     }
   }, [image_url, title]);
 
-  useEffect(() => {
+  const refreshRating = () => {
     if (recipe_hash) {
-      fetch(`http://localhost:5000/api/recipes/average-rating/${recipe_hash}`)
+      fetch(`http://localhost:5000/api/recipes/rating/${recipe_hash}`)
         .then((res) => res.json())
         .then((data) => {
           setAverage(data.average_rating);
           setNumRatings(data.num_ratings);
         });
     }
+  };
+
+  useEffect(() => {
+    refreshRating();
   }, [recipe_hash]);
 
   const handleSave = async () => {
@@ -83,7 +86,7 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
             <ImageIcon className="w-8 h-8" />
           </div>
         )}
-        {showRating && average > 0 && (
+        {showRating && typeof average === "number" && average > 0 && (
           <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs">
             <Star className="w-3 h-3 fill-yellow-400 stroke-yellow-400" />
             {average.toFixed(1)} ({numRatings})
@@ -97,7 +100,7 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
         </h3>
 
         {/* ⭐ דירוג כוכבים אינטראקטיבי */}
-        <RatingStars recipe={recipe} userId={userId} />
+        <RatingStars recipe={recipe} userId={userId} onRated={refreshRating} />
 
         {description && (
           <p className="text-xs text-gray-600 mb-2 line-clamp-2">{description}</p>

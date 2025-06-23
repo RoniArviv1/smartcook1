@@ -66,9 +66,7 @@ def update_item(user_id, item_id):
     item.category = data.get("category", item.category)
     item.quantity = data.get("quantity", item.quantity)
     item.unit = data.get("unit", item.unit)
-
-    if data.get("expiration_date"):
-        item.expiration_date = datetime.fromisoformat(data["expiration_date"])
+    item.expiration_date = datetime.fromisoformat(data["expiration_date"])
 
     db.session.commit()
     return jsonify(message="Item updated successfully"), 200

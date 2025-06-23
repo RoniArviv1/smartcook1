@@ -27,7 +27,8 @@ def rate_recipe(user_id: int, recipe: dict, rating: int) -> str:
         new_rating = RecipeRating(
             user_id=user_id,
             recipe_hash=recipe_hash,
-            rating=rating
+            rating=rating,
+            title=recipe.get("title")  # ← זה מוסיף את שם המתכון
         )
         db.session.add(new_rating)
 

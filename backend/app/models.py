@@ -12,6 +12,7 @@ class RecipeRating(db.Model):
     recipe_hash = db.Column(db.String(64), nullable=False)  # מזהה ייחודי למתכון
     rating = db.Column(db.Integer, nullable=False)  # 1 עד 5
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    title = db.Column(db.String(255), nullable=True)  # ← חדש
 
     user = db.relationship('User', backref=db.backref('recipe_ratings', lazy=True))
 

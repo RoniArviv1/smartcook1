@@ -1,9 +1,20 @@
 from flask import Blueprint, request, jsonify
 from app.services.rating_service import rate_recipe
+from app.models import RecipeRating
+
 
 rating_bp = Blueprint("rating_bp", __name__)
 
 # app/routes/rating_routes.py
+
+@rating_bp.route("/debug/ratings/<int:user_id>")
+def debug_ratings(user_id):
+    from app.models import RecipeRating
+    data = [
+        {"title": r.title, "rating": r.rating}
+        for r in RecipeRating.query.filter_by(user_id=user_id).all()
+    ]
+    return jsonify(data)
 
 @rating_bp.route("/recipes/rating/<recipe_hash>", methods=["GET"])
 def get_average_rating(recipe_hash):

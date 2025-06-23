@@ -29,7 +29,7 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
     setEditingId(ingredient.id);
     setEditForm({
       ...ingredient,
-      expiry_date: ingredient.expiration_date || ingredient.expiry_date || "",
+      expiration_date: ingredient.expiration_date || "",
     });
   };
 
@@ -48,14 +48,14 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
     .filter((ing) => {
       const nameMatch = ing.name.toLowerCase().includes(searchTerm.toLowerCase());
       const categoryMatch = categoryFilter === "all" || ing.category === categoryFilter;
-      const isExpired = getExpiryStatus(ing.expiration_date || ing.expiry_date) === "expired";
+      const isExpired = getExpiryStatus(ing.expiration_date) === "expired";
       return nameMatch && categoryMatch && (!showOnlyExpired || isExpired);
     })
     .sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "date") {
-        const aDate = new Date(a.expiration_date || a.expiry_date || "3000-01-01");
-        const bDate = new Date(b.expiration_date || b.expiry_date || "3000-01-01");
+        const aDate = new Date(a.expiration_date || "3000-01-01");
+        const bDate = new Date(b.expiration_date || "3000-01-01");
         return aDate - bDate;
       }
       return 0;
@@ -137,7 +137,7 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
         </thead>
         <tbody>
           {filteredIngredients.map((ingredient) => {
-            const date = ingredient.expiration_date || ingredient.expiry_date;
+            const date = ingredient.expiration_date;
             const status = getExpiryStatus(date);
 
             return (
@@ -185,8 +185,8 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
                   {editingId === ingredient.id ? (
                     <input
                       type="date"
-                      value={editForm.expiry_date || ""}
-                      onChange={(e) => setEditForm({ ...editForm, expiry_date: e.target.value })}
+                      value={editForm.expiration_date || ""}
+                      onChange={(e) => setEditForm({ ...editForm, expiration_date: e.target.value })}
                     />
                   ) : date ? (
                     <>

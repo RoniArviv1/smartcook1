@@ -3,6 +3,7 @@ import RecipeCard from "../recipes/RecipeCard";
 
 export default function RecommendedRecipes({ recipes, loading, userId }) {
   const safeRecipes = Array.isArray(recipes) ? recipes : [];
+  console.log("📦 RecommendedRecipes received:", recipes);
 
   return (
     <div className="mb-6">

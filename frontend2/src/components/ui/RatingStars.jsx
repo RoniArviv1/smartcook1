@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import sha256 from "crypto-js/sha256";
 
-export default function RatingStars({ recipe, userId }) {
+export default function RatingStars({ recipe, userId, onRated }) {
   const [hovered, setHovered] = useState(null);
   const [selected, setSelected] = useState(null);
   const [average, setAverage] = useState(recipe.average_rating || 0);
 
-  // חישוב recipe_hash אם לא קיים
   const recipeHash = recipe.recipe_hash || sha256(JSON.stringify(recipe)).toString();
 
   useEffect(() => {
@@ -15,7 +14,9 @@ export default function RatingStars({ recipe, userId }) {
       fetch(`http://localhost:5000/api/recipes/rating/${recipeHash}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.average_rating) setAverage(data.average_rating);
+          if (data.average_rating !== undefined) {
+            setAverage(data.average_rating);
+          }
         });
     }
   }, [recipeHash]);
@@ -26,14 +27,21 @@ export default function RatingStars({ recipe, userId }) {
       const res = await fetch("http://localhost:5000/api/recipes/rate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, rating: value, recipe: { ...recipe, recipe_hash: recipeHash } }),
+        body: JSON.stringify({
+          user_id: userId,
+          rating: value,
+          recipe: { ...recipe, recipe_hash: recipeHash },
+        }),
       });
 
       const data = await res.json();
       if (res.ok && data.recipe_hash) {
         const ratingRes = await fetch(`http://localhost:5000/api/recipes/rating/${data.recipe_hash}`);
         const ratingData = await ratingRes.json();
-        if (ratingData.average_rating) setAverage(ratingData.average_rating);
+        if (ratingData.average_rating !== undefined) {
+          setAverage(ratingData.average_rating);
+        }
+        if (onRated) onRated(); // ⬅️ מודיע ל־RecipeCard לעדכן גם שם
       }
     } catch (err) {
       console.error("Rating failed:", err);

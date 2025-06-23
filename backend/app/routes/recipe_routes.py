@@ -1,8 +1,6 @@
 from flask import Blueprint, jsonify, request
-# from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.services.recipe_service import get_recommended_recipes
-from app.services.user_service import get_preferences
 from app.services.saved_recipe_service import (
     save_recipe,
     delete_saved_recipe,
@@ -11,25 +9,30 @@ from app.services.saved_recipe_service import (
 
 recipe_bp = Blueprint('recipe', __name__)
 
+# 🔸 בקשת המלצות POST עם פרמטרים מותאמים אישית
+@recipe_bp.route('/recommended', methods=['POST'])
+def recommended_recipes():
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+    user_message = data.get("user_message", "Get me a recipe.")
+    user_prefs = data.get("user_prefs", {})
+    num_recipes = data.get("num_recipes", 3)
 
-# 🔸 קבלת המלצות מבוססות מלאי והעדפות משתמש
-@recipe_bp.route('/recommended/<int:user_id>', methods=['GET'])
-# @jwt_required()
-def recommended_recipes(user_id):
-    print("📥 GET /recommended by user", user_id)
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
 
-    user_message = "Get me a recipe using my preferences and ingredients."
-    user_prefs = get_preferences(user_id)
+    print(f"📥 POST /recommended by user {user_id} | num_recipes={num_recipes}")
 
-    recommended = get_recommended_recipes(
+    result = get_recommended_recipes(
         user_id=user_id,
         user_message=user_message,
         user_prefs=user_prefs,
-        save_to_db=False  # שומר את ההמלצות אוטומטית במסד הנתונים
+        save_to_db=False,
+        num_recipes=num_recipes
     )
 
-    print("✅ Recommended recipes:", recommended)
-    return jsonify({"recipes": recommended})
+    print("✅ Result:", result)
+    return jsonify({"recipes": result}), 200  # 🔁 עטוף את הרשימה 
 
 
 # 🔸 שליפת כל המתכונים השמורים של המשתמש
@@ -37,6 +40,7 @@ def recommended_recipes(user_id):
 def get_saved(user_id):
     saved = get_saved_recipes(user_id)
     return jsonify(saved), 200
+
 
 
 # 🔸 שמירת מתכון שנבחר ע"י המשתמש

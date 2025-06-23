@@ -32,6 +32,8 @@ def create_app():
         "expose_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }})
+    print("✅ CORS configuration loaded!")
+
 
     # Init extensions
     db.init_app(app)
