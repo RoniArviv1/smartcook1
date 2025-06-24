@@ -1,23 +1,30 @@
 import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const CATEGORIES = ["produce", "meat", "dairy", "pantry", "spices", "frozen", "other"];
 const UNITS = ["grams", "kg", "ml", "l", "pieces", "cups", "tbsp", "tsp"];
 
 export default function AddIngredientForm({ onSubmit, onCancel }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { name = "", barcode = "" } = location.state || {};
+
   const [form, setForm] = useState({
-    name: "",
+    name,
     category: "",
     quantity: "",
     unit: "",
-    expiration_date: ""
+    expiration_date: "",
+    barcode
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit({
+    await onSubmit({
       ...form,
       quantity: parseFloat(form.quantity)
     });
+    navigate("/inventory");
   };
 
   return (
@@ -104,7 +111,7 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
 
       {/* Buttons */}
       <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-        <button type="button" onClick={onCancel} style={{ padding: "8px 12px" }}>
+        <button type="button" onClick={onCancel || (() => navigate("/inventory"))} style={{ padding: "8px 12px" }}>
           Cancel
         </button>
         <button type="submit" style={{ padding: "8px 12px", backgroundColor: "#f97316", color: "white", border: "none", borderRadius: "4px" }}>

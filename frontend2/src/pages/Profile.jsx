@@ -1,82 +1,66 @@
-// src/pages/Profile.jsx
 import React, { useEffect, useState } from "react";
-import PreferencesForm from "../components/profile/PreferencesForm";
+import ProfileForm from "../components/profile/ProfileForm";
 
 export default function Profile() {
-  /* --------------------------------------------------------------- */
-  /*                חילוץ user_id  (JWT / localStorage)              */
-  /* --------------------------------------------------------------- */
-  const storedUser =
-    JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
-  const userId =  storedUser.user_id || storedUser.id || 1;;   // fallback ל-1 בזמן פיתוח
+  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+  const userId = storedUser.user_id || storedUser.id || 1;
 
-  /* --------------------------------------------------------------- */
-  /*                             STATE                               */
-  /* --------------------------------------------------------------- */
-  const [preferences, setPreferences] = useState(null); // {dietary:[], allergies:[], ...}
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* --------------------------------------------------------------- */
-  /*                        טעינת העדפות                            */
-  /* --------------------------------------------------------------- */
   useEffect(() => {
-    loadPreferences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadProfile();
   }, []);
 
-  const loadPreferences = async () => {
+  const loadProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/profile/${userId}`
-      );
-      if (!res.ok)
-        throw new Error(`GET profile failed: ${res.status}`);
-
+      const res = await fetch(`http://localhost:5000/api/profile/${userId}`);
+      if (!res.ok) throw new Error(`GET profile failed: ${res.status}`);
       const data = await res.json();
-      setPreferences(data);
-    } catch (error) {
-      console.error("❌ Error loading preferences:", error);
+      setProfile(data);
+    } catch (err) {
+      console.error("❌ Error loading profile:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  /* --------------------------------------------------------------- */
-  /*                        שמירת העדפות                             */
-  /* --------------------------------------------------------------- */
-  const handleSubmit = async (formData) => {
+  const handleSave = async (formData) => {
     try {
-      // ה-Backend שלנו תומך ב-PUT ⇢ /api/profile/<user_id>
-      const url = `http://localhost:5000/api/profile/${userId}`;
-
-      const res = await fetch(url, {
+      const res = await fetch(`http://localhost:5000/api/profile/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+      if (!res.ok) throw new Error(`PUT profile failed: ${res.status}`);
 
-      if (!res.ok)
-        throw new Error(`PUT profile failed: ${res.status}`);
+      alert("Profile updated successfully!");
 
-      loadPreferences();                // רענון-state אחרי שמירה
-    } catch (error) {
-      console.error("❌ Error saving preferences:", error);
+      // ✅ שמירה ב־localStorage לעדכון מיידי בניווט העליון
+      const existingUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+      const updatedUser = {
+        ...existingUser,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        image_url: formData.image_url || formData.image,  // חשוב: לוודא שהשדה זהה למפתח בשאר הקוד
+      };
+      localStorage.setItem("smartcookUser", JSON.stringify(updatedUser));
+
+      loadProfile();
+    } catch (err) {
+      console.error("❌ Error updating profile:", err);
+      alert("Failed to update profile.");
     }
   };
 
-  /* --------------------------------------------------------------- */
-  /*                              Render                             */
-  /* --------------------------------------------------------------- */
   return (
-    <div style={{ padding: 20 }}>
-      <h1>👤 Profile Settings</h1>
-
-      <PreferencesForm
-        preferences={preferences}
-        loading={loading}
-        onSubmit={handleSubmit}
-      />
+    <div className="min-h-screen bg-gray-50 p-10">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">👤 My Profile</h1>
+        <ProfileForm profile={profile} loading={loading} onSave={handleSave} />
+      </div>
     </div>
   );
 }

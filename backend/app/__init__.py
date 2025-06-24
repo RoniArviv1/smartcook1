@@ -12,6 +12,8 @@ from app.routes.inventory_routes    import inventory_bp
 from app.routes.notification_routes import notification_bp
 from app.routes.recipe_routes       import recipe_bp
 from app.routes.user_routes         import user_bp
+from app.routes.barcode_routes import barcode_bp
+from app.routes.scan_routes import scan_bp
 
 def create_app():
     app = Flask(__name__)
@@ -25,6 +27,7 @@ def create_app():
     CORS(app, resources={r"/api/*": {
         "origins": [
             "http://localhost:3000",
+            "http://localhost:3001",
             "http://localhost:3002"
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -46,8 +49,10 @@ def create_app():
     app.register_blueprint(inventory_bp,    url_prefix='/api/inventory')
     app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     app.register_blueprint(recipe_bp,       url_prefix='/api/recipes')
-    app.register_blueprint(user_bp,         url_prefix='/api/profile')
+    app.register_blueprint(user_bp,         url_prefix='/api')
     app.register_blueprint(rating_bp, url_prefix='/api')
+    app.register_blueprint(barcode_bp, url_prefix="/api")
+    app.register_blueprint(scan_bp, url_prefix="/api")
 
 
     return app

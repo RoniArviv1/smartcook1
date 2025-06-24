@@ -33,7 +33,10 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
 
-    # store preferences as JSON
+    first_name = db.Column(db.String(100))  # ✅ חדש
+    last_name = db.Column(db.String(100))   # ✅ חדש
+    image_url = db.Column(db.Text)          # ✅ חדש
+
     preferences = db.Column(JSON, nullable=True, default=dict)
 
     def set_password(self, password: str):
@@ -41,6 +44,7 @@ class User(db.Model):
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
+
 
 
 class InventoryItem(db.Model):

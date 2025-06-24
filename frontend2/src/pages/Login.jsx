@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Login({ setIsLoggedIn, setUsername }) {
+export default function Login({ setIsLoggedIn, setUsername, setImageUrl }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,15 +21,18 @@ export default function Login({ setIsLoggedIn, setUsername }) {
       const data = await res.json();
 
       if (res.status === 200 && data.access_token) {
+        // שמירת נתוני משתמש כולל תמונה
         localStorage.setItem('smartcookUser', JSON.stringify({
           user_id: data.user_id,
-          username: data.username
+          username: data.username,
+          image_url: data.image_url || ""
         }));
         localStorage.setItem('token', data.access_token);
 
-        // ⬅️ עדכון state באפליקציה
+        // עדכון state
         setIsLoggedIn(true);
         setUsername(data.username);
+        setImageUrl(data.image_url || "");
 
         navigate('/');
       } else if (res.status === 401) {

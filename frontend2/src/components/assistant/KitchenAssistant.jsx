@@ -126,7 +126,7 @@ export default function KitchenAssistant({
   /* ────────── Profile fetch ────────── */
   const fetchProfile = async () => {
     try {
-      const r = await fetch(`http://localhost:5000/api/profile/${userId}`);
+      const r = await fetch(`http://localhost:5000/api/preferences/${userId}`);
       if (r.ok) setProfileData(await r.json());
     } catch (e) {
       console.error(e);
@@ -267,7 +267,7 @@ export default function KitchenAssistant({
               setShowProfile(!showProfile);
             }}
           >
-            <Sparkles className="w-4 h-4 mr-1" /> Profile
+            <Sparkles className="w-4 h-4 mr-1" /> Preferences
           </Button>
           <Button variant="ghost" onClick={() => setShowSaved(!showSaved)}>
             <Heart className="w-4 h-4 mr-1" /> Saved Recipes

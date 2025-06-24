@@ -21,12 +21,12 @@ export default function Dashboard() {
 
     try {
       const [prefsRes, inventoryRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/profile/${userId}`),
+        fetch(`http://localhost:5000/api/preferences/${userId}`),
         fetch(`http://localhost:5000/api/inventory/${userId}`)
       ]);
 
       if (![prefsRes, inventoryRes].every(r => r.ok)) {
-        throw new Error("Profile or inventory API request failed.");
+        throw new Error("preferences or inventory API request failed.");
       }
 
       const [prefsData, inventoryData] = await Promise.all([
@@ -39,7 +39,7 @@ export default function Dashboard() {
       const rawInventory = inventoryData.inventory || [];
       const cleanedInventory = rawInventory.map((item) => ({
         ...item,
-        expiration_date: item.expiration_date || item.expiry_date || null
+        expiration_date: item.expiration_date ||  null
       }));
 
       console.log("✅ Inventory loaded:", cleanedInventory);

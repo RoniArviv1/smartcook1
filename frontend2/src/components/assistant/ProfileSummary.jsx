@@ -29,7 +29,7 @@ export default function ProfileSummary({
 
     const fetchPrefs = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/profile/${userId}`);
+        const res = await fetch(`http://localhost:5000/api/preferences/${userId}`);
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         setPrefs(data);
@@ -43,10 +43,10 @@ export default function ProfileSummary({
   /* ------------- פונקציות עזר ------------- */
   const expiringSoon = () =>
     inventory
-      .filter((i) => i.expiry_date)
+      .filter((i) => i.expiration_date)
       .filter(
         (i) =>
-          differenceInDays(new Date(i.expiry_date), new Date()) <= 3
+          differenceInDays(new Date(i.expiration_date), new Date()) <= 3
       );
 
   const allergyList = () => {
@@ -58,7 +58,7 @@ export default function ProfileSummary({
   };
 
   /* טעינה? */
-  if (!prefs) return <p>Loading profile…</p>;
+  if (!prefs) return <p>Loading preferences</p>;
 
   /* ---------------------------------------------------- */
   /*                   JSX Starts Here                    */
@@ -153,7 +153,7 @@ export default function ProfileSummary({
                 <span className="text-[10px]">
                   (
                   {differenceInDays(
-                    new Date(ing.expiry_date),
+                    new Date(ing.expiration_date),
                     new Date()
                   )}{" "}
                   days)

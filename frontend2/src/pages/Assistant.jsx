@@ -25,7 +25,7 @@ export default function Assistant() {
         const invRes = await fetch(`http://localhost:5000/api/inventory/${userId}`);
         const invData = await invRes.json();
 
-        const prefRes = await fetch(`http://localhost:5000/api/profile/${userId}`);
+        const prefRes = await fetch(`http://localhost:5000/api/preferences/${userId}`);
         const prefData = await prefRes.json();
 
         setInventory(invData.inventory || []);

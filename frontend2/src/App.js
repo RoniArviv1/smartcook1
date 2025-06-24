@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  NavLink
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import ScanProduct from "./pages/ScanProduct";
+import InventoryAddPage from "./components/inventory/InventoryAddPage";
+import AddIngredientForm from "./components/inventory/AddIngredientForm";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
-import Profile from "./pages/Profile";
+import Preferences from "./pages/Preferences";
 import Assistant from "./pages/Assistant";
+import Profile from "./pages/Profile";
 
-function NavigationBar({ isLoggedIn, username, handleLogout }) {
+function NavigationBar({ isLoggedIn, username, imageUrl, handleLogout }) {
   return (
     <nav className="bg-white/80 backdrop-blur shadow-md px-6 py-4 sticky top-0 z-50">
       <div className="flex justify-between items-center">
@@ -33,15 +34,27 @@ function NavigationBar({ isLoggedIn, username, handleLogout }) {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/profile" className={({ isActive }) =>
+                <NavLink to="/preferences" className={({ isActive }) =>
                   isActive ? "font-bold text-green-500 border-b-2 border-green-400 pb-1" : "hover:text-green-400 transition"}>
-                  Profile
+                  Preferences
                 </NavLink>
               </li>
               <li>
                 <NavLink to="/assistant" className={({ isActive }) =>
                   isActive ? "font-bold text-purple-500 border-b-2 border-purple-400 pb-1" : "hover:text-purple-400 transition"}>
                   Assistant
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/profile" className={({ isActive }) =>
+                  isActive ? "font-bold text-orange-500 border-b-2 border-orange-400 pb-1" : "hover:text-orange-400 transition"}>
+                  Profile
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/scan" className={({ isActive }) =>
+                  isActive ? "font-bold text-yellow-500 border-b-2 border-yellow-400 pb-1" : "hover:text-yellow-400 transition"}>
+                  Scan
                 </NavLink>
               </li>
             </>
@@ -54,7 +67,14 @@ function NavigationBar({ isLoggedIn, username, handleLogout }) {
               <NavLink to="/register" className="text-sm text-gray-600 hover:text-green-500">Register</NavLink>
             </>
           ) : (
-            <>
+            <div className="flex items-center gap-3">
+              {imageUrl && (
+                <img
+                  src={imageUrl}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full border object-cover"
+                />
+              )}
               <span className="text-sm text-gray-700">👋 Hello, {username}</span>
               <button
                 onClick={handleLogout}
@@ -62,7 +82,7 @@ function NavigationBar({ isLoggedIn, username, handleLogout }) {
               >
                 Logout
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -73,14 +93,19 @@ function NavigationBar({ isLoggedIn, username, handleLogout }) {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
-  useEffect(() => {
+  const updateUserFromStorage = () => {
     const token = localStorage.getItem("token");
     const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
-    const name = storedUser.username || "";
 
     setIsLoggedIn(!!token);
-    setUsername(name);
+    setUsername(storedUser.username || storedUser.first_name || "");
+    setImageUrl(storedUser.image_url || "");
+  };
+
+  useEffect(() => {
+    updateUserFromStorage();
   }, []);
 
   const handleLogout = () => {
@@ -88,6 +113,7 @@ export default function App() {
     localStorage.removeItem("smartcookUser");
     setIsLoggedIn(false);
     setUsername("");
+    setImageUrl("");
     window.location.href = "/login";
   };
 
@@ -97,6 +123,7 @@ export default function App() {
         <NavigationBar
           isLoggedIn={isLoggedIn}
           username={username}
+          imageUrl={imageUrl}
           handleLogout={handleLogout}
         />
         <div className="p-6">
@@ -104,12 +131,16 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/inventory" element={<Inventory />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/preferences" element={<Preferences />} />
             <Route path="/assistant" element={<Assistant />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/scan" element={<ScanProduct />} />
+            <Route path="/inventory/add" element={<InventoryAddPage />} />
             <Route path="/login" element={
               <Login
                 setIsLoggedIn={setIsLoggedIn}
                 setUsername={setUsername}
+                setImageUrl={setImageUrl}
               />
             } />
             <Route path="/register" element={<Register />} />
