@@ -10,6 +10,8 @@ export default function ProfileForm({ profile, loading, onSave }) {
     image: "",
   });
 
+  const [showSuccess, setShowSuccess] = useState(false);
+
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -37,9 +39,11 @@ export default function ProfileForm({ profile, loading, onSave }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    await onSave(formData);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 5000);
   };
 
   if (loading) return <p>Loading profile...</p>;
@@ -96,12 +100,20 @@ export default function ProfileForm({ profile, loading, onSave }) {
         <input type="file" accept="image/*" onChange={handleImageChange} />
       </div>
 
-      <button
-        type="submit"
-        className="bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded"
-      >
-        Save Profile
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          className="bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded"
+        >
+          Save Profile
+        </button>
+
+        {showSuccess && (
+          <span className="text-green-700 font-semibold bg-green-100 px-3 py-1 rounded text-sm">
+            ✅ Profile updated successfully!
+          </span>
+        )}
+      </div>
     </form>
   );
 }

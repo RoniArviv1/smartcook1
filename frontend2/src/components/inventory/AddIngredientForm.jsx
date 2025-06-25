@@ -11,7 +11,6 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
 
   const [form, setForm] = useState({
     name,
-    category: "",
     quantity: "",
     unit: "",
     expiration_date: "",
@@ -44,25 +43,6 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
             style={{ width: "100%", padding: "6px" }}
             placeholder="Ingredient name"
           />
-        </div>
-
-        {/* Category */}
-        <div>
-          <label htmlFor="category">Category</label>
-          <select
-            id="category"
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            required
-            style={{ width: "100%", padding: "6px" }}
-          >
-            <option value="">Select category</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Quantity + Unit */}

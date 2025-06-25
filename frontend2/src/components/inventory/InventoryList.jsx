@@ -5,7 +5,6 @@ import { AlertTriangle, Pencil, Save, Trash2, X } from "lucide-react";
 export default function InventoryList({ ingredients, loading, onUpdate, onDelete }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [showOnlyExpired, setShowOnlyExpired] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,9 +46,8 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
   const filteredIngredients = ingredients
     .filter((ing) => {
       const nameMatch = ing.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const categoryMatch = categoryFilter === "all" || ing.category === categoryFilter;
       const isExpired = getExpiryStatus(ing.expiration_date) === "expired";
-      return nameMatch && categoryMatch && (!showOnlyExpired || isExpired);
+      return nameMatch && (!showOnlyExpired || isExpired);
     })
     .sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
@@ -62,8 +60,6 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
     });
 
   if (loading) return <p>Loading inventory...</p>;
-
-  const uniqueCategories = ["all", ...new Set(ingredients.map((i) => i.category))];
 
   return (
     <div>
@@ -81,19 +77,6 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
           border: "1px solid #ddd",
         }}
       >
-        <div>
-          <label style={{ fontWeight: "bold", marginRight: "6px" }}>Category:</label>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #ccc", minWidth: "120px" }}
-          >
-            {uniqueCategories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-
         <div>
           <label style={{ fontWeight: "bold", marginRight: "6px" }}>Sort by:</label>
           <select
@@ -129,7 +112,6 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
         <thead>
           <tr style={{ backgroundColor: "#f2f2f2" }}>
             <th>Name</th>
-            <th>Category</th>
             <th>Quantity</th>
             <th>Expiry Date</th>
             <th>Actions</th>
@@ -150,16 +132,6 @@ export default function InventoryList({ ingredients, loading, onUpdate, onDelete
                     />
                   ) : (
                     ingredient.name
-                  )}
-                </td>
-                <td>
-                  {editingId === ingredient.id ? (
-                    <input
-                      value={editForm.category || ""}
-                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    />
-                  ) : (
-                    ingredient.category
                   )}
                 </td>
                 <td>

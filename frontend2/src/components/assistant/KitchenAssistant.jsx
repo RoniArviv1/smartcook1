@@ -221,15 +221,22 @@ export default function KitchenAssistant({
     setter(list.includes(name) ? list.filter(i => i !== name) : [...list, name]);
 
   /* ────────── save / delete recipe ────────── */
-  const saveRecipe = (r) => {
-    fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
+  const saveRecipe = async (r) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(r),
-    })
-      .then(() => setSavedRecipes(prev => [...prev, r]))
-      .catch(console.error);
-  };
+    });
+    if (res.ok) {
+      setSavedRecipes(prev => [...prev, r]);
+    } else {
+      console.error("❌ Failed to save recipe");
+    }
+  } catch (err) {
+    console.error("❌ Error saving recipe:", err);
+  }
+};
     const deleteRecipe = async (title) => {
   try {
     const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
@@ -259,16 +266,7 @@ export default function KitchenAssistant({
           </div>
           <h1 className="text-2xl font-light text-gray-800">SmartCook Assistant</h1>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (!showProfile) fetchProfile();
-              setShowProfile(!showProfile);
-            }}
-          >
-            <Sparkles className="w-4 h-4 mr-1" /> Preferences
-          </Button>
+        <div className="flex gap-2 items-center">
           <Button variant="ghost" onClick={() => setShowSaved(!showSaved)}>
             <Heart className="w-4 h-4 mr-1" /> Saved Recipes
           </Button>

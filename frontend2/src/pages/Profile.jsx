@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ProfileForm from "../components/profile/ProfileForm";
 
 export default function Profile() {
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
   const userId = storedUser.user_id || storedUser.id || 1;
 
@@ -35,18 +36,18 @@ export default function Profile() {
       });
       if (!res.ok) throw new Error(`PUT profile failed: ${res.status}`);
 
-      alert("Profile updated successfully!");
-
-      // ✅ שמירה ב־localStorage לעדכון מיידי בניווט העליון
       const existingUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
       const updatedUser = {
         ...existingUser,
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
-        image_url: formData.image_url || formData.image,  // חשוב: לוודא שהשדה זהה למפתח בשאר הקוד
+        image_url: formData.image_url || formData.image,
       };
       localStorage.setItem("smartcookUser", JSON.stringify(updatedUser));
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 5000); // ✅ נעלם אחרי 5 שניות
 
       loadProfile();
     } catch (err) {
@@ -59,7 +60,9 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50 p-10">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">👤 My Profile</h1>
+
         <ProfileForm profile={profile} loading={loading} onSave={handleSave} />
+
       </div>
     </div>
   );
