@@ -20,8 +20,8 @@ export default function Login({ setIsLoggedIn, setUsername, setImageUrl }) {
 
       const data = await res.json();
 
-      if (res.status === 200 && data.access_token) {
-        // שמירת נתוני משתמש כולל תמונה
+      if (data.access_token) {
+        // ✅ Successful login
         localStorage.setItem('smartcookUser', JSON.stringify({
           user_id: data.user_id,
           username: data.username,
@@ -29,16 +29,16 @@ export default function Login({ setIsLoggedIn, setUsername, setImageUrl }) {
         }));
         localStorage.setItem('token', data.access_token);
 
-        // עדכון state
         setIsLoggedIn(true);
         setUsername(data.username);
         setImageUrl(data.image_url || "");
 
         navigate('/');
-      } else if (res.status === 401) {
-        setError("Invalid email or password.");
+      } else if (data.error) {
+        // ❌ Login failed with backend error
+        setError(data.error);
       } else {
-        setError(data.error || "Login failed.");
+        setError("Login failed.");
       }
 
     } catch (err) {

@@ -8,7 +8,6 @@ import {
 import Button from "../ui/button";
 import ChatMessage from "./ChatMessage";
 import SuggestedRecipes from "./SuggestedRecipes";
-import ProfileSummary from "./ProfileSummary";
 import { Link } from "react-router-dom";
 
 /* ────────────── קבוצות אופציות ────────────── */
@@ -608,17 +607,6 @@ export default function KitchenAssistant({
               );
             })
           )}
-        </div>
-      )}
-
-      {/* -------- Profile Summary -------- */}
-      {showProfile && profileData && (
-        <div className="w-full max-w-4xl mt-6">
-          <ProfileSummary
-            userPrefs={profileData}
-            inventory={inventory}
-            userName={userName}
-          />
         </div>
       )}
 

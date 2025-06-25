@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.services.user_service import register_user, authenticate_user
+from app.services.auth_service import register_user, authenticate_user
 from flask_jwt_extended import create_access_token
 
 auth_bp = Blueprint('auth', __name__)
@@ -26,7 +26,7 @@ def login():
     user = authenticate_user(data)
 
     if not user:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Incorrect username or password"}), 200
 
     token = create_access_token(identity=user.id)
     return jsonify({
