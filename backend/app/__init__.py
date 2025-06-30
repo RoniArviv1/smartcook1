@@ -13,6 +13,10 @@ from app.routes.recipe_routes       import recipe_bp
 from app.routes.user_routes         import user_bp
 from app.routes.barcode_routes import barcode_bp
 from app.routes.scan_routes import scan_bp
+from app.routes.ingredient_routes import ingredient_bp
+
+
+
 
 def create_app():
     app = Flask(__name__)
@@ -51,6 +55,7 @@ def create_app():
     app.register_blueprint(rating_bp, url_prefix='/api')
     app.register_blueprint(barcode_bp, url_prefix="/api")
     app.register_blueprint(scan_bp, url_prefix="/api")
+    app.register_blueprint(ingredient_bp, url_prefix="/api/ingredient")
 
 
     return app

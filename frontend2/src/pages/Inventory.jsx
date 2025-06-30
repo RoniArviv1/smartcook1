@@ -3,6 +3,7 @@ import InventoryList from "../components/inventory/InventoryList";
 import AddIngredientForm from "../components/inventory/AddIngredientForm";
 import ScanModal from "../components/inventory/ScanModal";
 
+
 export default function Inventory() {
   const [ingredients, setIngredients] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -16,7 +17,6 @@ export default function Inventory() {
     JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
   const userId = storedUser.user_id || storedUser.id || 1;
 
-  // ─────────────── Initial load ───────────────
   useEffect(() => {
     loadIngredients();
   }, []);
@@ -35,22 +35,25 @@ export default function Inventory() {
     }
   };
 
-  // ─────────────── Add new ingredient ───────────────
   const handleAddIngredient = async (ingredient) => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/inventory/${userId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...ingredient, user_id: userId }),
-      });
-      if (!res.ok) throw new Error(`POST failed: ${res.status}`);
-      const newItem = await res.json();
-      setIngredients((prev) => [...prev, newItem]);
-      setShowAddForm(false);
-    } catch (error) {
-      console.error("❌ Error adding ingredient:", error);
-    }
-  };
+  try {
+    const res = await fetch(`http://localhost:5000/api/inventory/${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...ingredient, user_id: userId }),
+    });
+
+    if (!res.ok) throw new Error(`POST failed: ${res.status}`);
+    const newItem = await res.json();
+
+    // רענון מלאי מהשרת כדי לשקף את השינויים לאחר האיחוד/הוספה
+    await loadIngredients();
+    setShowAddForm(false);
+  } catch (error) {
+    console.error("❌ Error adding ingredient:", error);
+  }
+};
+
 
   const handleUpdateIngredient = async (id, updates) => {
     try {
@@ -82,7 +85,6 @@ export default function Inventory() {
     }
   };
 
-  // ─────────────── Barcode detection ───────────────
   const handleBarcodeDetected = (barcode) => {
     console.log("✅ Scanned barcode:", barcode);
     setScannedBarcode(barcode);
@@ -112,7 +114,6 @@ export default function Inventory() {
     setScannedBarcode("");
   };
 
-  // ─────────────── UI ───────────────
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">🧺 My Inventory</h1>
@@ -157,6 +158,7 @@ export default function Inventory() {
         <AddIngredientForm
           onSubmit={handleAddIngredient}
           onCancel={() => setShowAddForm(false)}
+          existingItems={ingredients}
         />
       )}
 

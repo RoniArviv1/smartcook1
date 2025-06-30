@@ -5,6 +5,7 @@ from typing import Any, List
 from dotenv import load_dotenv
 import openai
 from openai.error import OpenAIError
+from app.utils.unit_normalizer import normalize_ingredient_units
 
 # 🌟 דירוגים
 from app.services.rating_learning import summarize_user_ratings_for_prompt
@@ -159,8 +160,9 @@ def suggest_recipes_from_groq(
         )
 
         try:
+            print("prompt", prompt)
             res = openai.ChatCompletion.create(
-                model="llama3-70b-8192",
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
                 max_tokens=1100,
@@ -198,7 +200,8 @@ def suggest_recipes_from_groq(
             valid_recipes.append(r)
 
         if valid_recipes:
-            return {"user_id": user_id, "recipes": valid_recipes}
+            normalized = normalize_ingredient_units(valid_recipes)
+            return {"user_id": user_id, "recipes": normalized}
 
         last_error = "No valid recipes returned"
         if attempt < MAX_ATTEMPTS:

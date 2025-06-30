@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const CATEGORIES = ["produce", "meat", "dairy", "pantry", "spices", "frozen", "other"];
-const UNITS = ["grams", "kg", "ml", "l", "pieces", "cups", "tbsp", "tsp"];
 
-export default function AddIngredientForm({ onSubmit, onCancel }) {
+export default function AddIngredientForm({ onSubmit, onCancel, existingItems = [] }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { name = "", barcode = "" } = location.state || {};
@@ -17,8 +16,40 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
     barcode
   });
 
+  const [allowedUnits, setAllowedUnits] = useState([]);
+
+  // 🌀 שליפת יחידות מתאימות מהשרת
+  useEffect(() => {
+    const fetchAllowedUnits = async () => {
+      if (!form.name.trim()) {
+        setAllowedUnits([]);
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/ingredient/units?name=${encodeURIComponent(form.name)}`);;
+        if (!res.ok) throw new Error("Failed to fetch allowed units");
+        const data = await res.json();
+        setAllowedUnits(data.units || []);
+      } catch (err) {
+        console.error("❌ Error fetching units:", err);
+        setAllowedUnits([]);
+      }
+    };
+
+    fetchAllowedUnits();
+  }, [form.name]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🛑 ולידציה – האם היחידה תקפה
+    if (!allowedUnits.includes(form.unit)) {
+      alert(`Unit "${form.unit}" is not valid for "${form.name}". Please choose a correct unit.`);
+      return;
+    }
+
+    // ✅ שליחה
     await onSubmit({
       ...form,
       quantity: parseFloat(form.quantity)
@@ -38,7 +69,10 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
             id="name"
             type="text"
             value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            onChange={(e) => {
+              const newName = e.target.value;
+              setForm({ ...form, name: newName, unit: "" }); // איפוס היחידה
+            }}
             required
             style={{ width: "100%", padding: "6px" }}
             placeholder="Ingredient name"
@@ -64,10 +98,11 @@ export default function AddIngredientForm({ onSubmit, onCancel }) {
               value={form.unit}
               onChange={(e) => setForm({ ...form, unit: e.target.value })}
               required
+              disabled={!form.name.trim()}
               style={{ width: "120px", padding: "6px" }}
             >
               <option value="">Unit</option>
-              {UNITS.map((unit) => (
+              {allowedUnits.map((unit) => (
                 <option key={unit} value={unit}>
                   {unit}
                 </option>

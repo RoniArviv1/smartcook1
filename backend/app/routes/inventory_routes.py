@@ -51,8 +51,10 @@ def add_item(user_id):
 def delete_item(user_id, item_id):
     item = inventory_service.delete_inventory_item(user_id, item_id)
     if not item:
+        print("❌ Item not found!")
         return jsonify(message="Item not found"), 404
     return jsonify(message="Item deleted successfully"), 200
+
 
 # 🔹 עדכון – PUT /api/inventory/<user_id>/<item_id>
 @inventory_bp.route("/<int:user_id>/<int:item_id>", methods=["PUT"])
@@ -66,7 +68,10 @@ def update_item(user_id, item_id):
     item.category = data.get("category", item.category)
     item.quantity = data.get("quantity", item.quantity)
     item.unit = data.get("unit", item.unit)
-    item.expiration_date = datetime.fromisoformat(data["expiration_date"])
+
+
+    if data.get("expiration_date"):
+        item.expiration_date = datetime.fromisoformat(data["expiration_date"])
 
     db.session.commit()
     return jsonify(message="Item updated successfully"), 200
