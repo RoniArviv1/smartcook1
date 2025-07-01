@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from app.services.assistant_service import suggest_recipes_from_groq
 from app.services.global_cache import CACHE
 from app.services.recipe_service import get_recommended_recipes
+from app.services.inventory_service import get_user_inventory
+from datetime import date  
+
 
 assistant_bp = Blueprint("assistant", __name__)
 
@@ -11,13 +14,31 @@ def handle_assistant():
         data = request.get_json(force=True)
         user_id      = data.get("user_id")
         user_message = data.get("message")
-        ingredients  = data.get("ingredients", [])
         user_prefs   = data.get("user_prefs", {})
         prev_recipe  = data.get("prev_recipe")
-        num_recipes  = data.get("num_recipes", 1)  # ⬅️ ברירת מחדל: 1
+        num_recipes  = data.get("num_recipes", 1) 
 
-        print("🟡 Incoming message:", user_message)
-        print("🟡 Previous recipe title:", prev_recipe.get("title") if prev_recipe else None)
+    
+                
+        raw_inv = get_user_inventory(user_id)          # list[InventoryItem]
+        today   = date.today()  
+
+        ingredients = [
+            {
+                "name": item.name,
+                "qty":  item.quantity,
+                "unit": item.unit
+            }
+            for item in raw_inv
+            if (item.quantity or 0) > 0            # סינון כמות אפס
+               and (                               # ⭐️ סינון תוקף
+                    not getattr(item, "expiration_date", None)
+                    or item.expiration_date >= today
+               )
+        ]
+
+
+
 
         result = suggest_recipes_from_groq(
             user_id=user_id,

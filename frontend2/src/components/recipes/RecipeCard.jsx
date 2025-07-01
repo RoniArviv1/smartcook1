@@ -70,6 +70,43 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
     }
   };
 
+  const handleUseRecipe = async () => {
+    if (!userId || !Array.isArray(ingredients)) {
+      alert("Missing user or ingredients");
+      return;
+    }
+
+    const formattedIngredients = ingredients.map((ing) => ({
+      name: ing.name,
+      quantity: ing.qty, // אם תעבור ל-quantity תעדכן גם כאן
+      unit: ing.unit,
+    }));
+
+    try {
+      const res = await fetch("http://localhost:5000/api/use-recipe/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          ingredients: formattedIngredients,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("✅ המלאי עודכן לאחר הכנת המתכון!");
+        console.log("📦 Updated items:", data.updated_items);
+      } else {
+        alert("❌ עדכון המלאי נכשל");
+        console.error("🔴 Error:", data);
+      }
+    } catch (err) {
+      console.error("⚠️ Network error:", err);
+      alert("⚠️ שגיאה בעת שליחת הבקשה");
+    }
+  };
+
   if (!recipe) return null;
 
   return (
@@ -99,7 +136,6 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
           {title}
         </h3>
 
-        {/* ⭐ דירוג כוכבים אינטראקטיבי */}
         <RatingStars recipe={recipe} userId={userId} onRated={refreshRating} />
 
         {description && (
@@ -190,6 +226,14 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
             )}
           </button>
         </div>
+
+        {/* כפתור הכנתי את המתכון */}
+        <button
+          onClick={handleUseRecipe}
+          className="mt-3 w-full bg-green-600 text-white py-1 rounded hover:bg-green-700 text-xs"
+        >
+          🍽️ I made the recipe
+        </button>
       </div>
     </div>
   );

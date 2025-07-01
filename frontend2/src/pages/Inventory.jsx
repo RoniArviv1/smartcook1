@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import InventoryList from "../components/inventory/InventoryList";
 import AddIngredientForm from "../components/inventory/AddIngredientForm";
 import ScanModal from "../components/inventory/ScanModal";
-
+import SpiceSelector from "../components/inventory/SpiceSelector"; // ✅ חדש
 
 export default function Inventory() {
   const [ingredients, setIngredients] = useState([]);
@@ -36,24 +36,22 @@ export default function Inventory() {
   };
 
   const handleAddIngredient = async (ingredient) => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/inventory/${userId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...ingredient, user_id: userId }),
-    });
+    try {
+      const res = await fetch(`http://localhost:5000/api/inventory/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...ingredient, user_id: userId }),
+      });
 
-    if (!res.ok) throw new Error(`POST failed: ${res.status}`);
-    const newItem = await res.json();
+      if (!res.ok) throw new Error(`POST failed: ${res.status}`);
+      const newItem = await res.json();
 
-    // רענון מלאי מהשרת כדי לשקף את השינויים לאחר האיחוד/הוספה
-    await loadIngredients();
-    setShowAddForm(false);
-  } catch (error) {
-    console.error("❌ Error adding ingredient:", error);
-  }
-};
-
+      await loadIngredients();
+      setShowAddForm(false);
+    } catch (error) {
+      console.error("❌ Error adding ingredient:", error);
+    }
+  };
 
   const handleUpdateIngredient = async (id, updates) => {
     try {
@@ -134,6 +132,10 @@ export default function Inventory() {
         </button>
       </div>
 
+      {/* ✅ תבלינים */}
+      <SpiceSelector userId={userId} />
+
+      {/* סריקת ברקוד */}
       <ScanModal
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}

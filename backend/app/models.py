@@ -103,3 +103,21 @@ class SavedRecipe(db.Model):
             "image_url": self.image_url,
         }
 
+class UserSpice(db.Model):
+    __tablename__ = 'user_spices'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    spice_name = db.Column(db.String(100), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('user_spices', lazy=True))
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'spice_name', name='unique_user_spice'),)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "spice_name": self.spice_name,
+            "added_at": self.added_at.isoformat()
+        }

@@ -45,7 +45,11 @@ export default function Assistant() {
     const payload = {
       user_id: userId,
       message,
-      ingredients: inventory.map((i) => i.name),
+      ingredients: inventory.map(({ name, quantity, unit }) => ({
+        name,
+        qty: quantity,
+        unit,
+      })),
       user_prefs: userPrefs,
       prev_recipe: lastRecipe || null,  // ✅ שימו לב – רק אובייקט או null
     };
