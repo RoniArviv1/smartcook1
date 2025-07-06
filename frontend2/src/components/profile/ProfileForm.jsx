@@ -1,13 +1,16 @@
-// src/components/profile/ProfileForm.jsx
 import React, { useState, useEffect } from "react";
 
 export default function ProfileForm({ profile, loading, onSave }) {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    first_name: "",
+    last_name: "",
     email: "",
     password: "",
     image: "",
+    calorie_goal: "",
+    protein_goal: "",
+    carbs_goal: "",
+    fat_goal: "",
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -15,11 +18,15 @@ export default function ProfileForm({ profile, loading, onSave }) {
   useEffect(() => {
     if (profile) {
       setFormData({
-        firstName: profile.firstName || "",
-        lastName: profile.lastName || "",
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
         email: profile.email || "",
         password: profile.password || "",
         image: profile.image || "",
+        calorie_goal: profile.calorie_goal || "",
+        protein_goal: profile.protein_goal || "",
+        carbs_goal: profile.carbs_goal || "",
+        fat_goal: profile.fat_goal || "",
       });
     }
   }, [profile]);
@@ -53,8 +60,8 @@ export default function ProfileForm({ profile, loading, onSave }) {
       <div>
         <label className="block font-medium">First Name</label>
         <input
-          name="firstName"
-          value={formData.firstName || ""}
+          name="first_name"
+          value={formData.first_name}
           onChange={handleChange}
           className="w-full border rounded p-2"
         />
@@ -63,8 +70,8 @@ export default function ProfileForm({ profile, loading, onSave }) {
       <div>
         <label className="block font-medium">Last Name</label>
         <input
-          name="lastName"
-          value={formData.lastName || ""}
+          name="last_name"
+          value={formData.last_name}
           onChange={handleChange}
           className="w-full border rounded p-2"
         />
@@ -75,7 +82,7 @@ export default function ProfileForm({ profile, loading, onSave }) {
         <input
           type="email"
           name="email"
-          value={formData.email || ""}
+          value={formData.email}
           onChange={handleChange}
           className="w-full border rounded p-2"
         />
@@ -86,7 +93,7 @@ export default function ProfileForm({ profile, loading, onSave }) {
         <input
           type="password"
           name="password"
-          value={formData.password || ""}
+          value={formData.password}
           onChange={handleChange}
           className="w-full border rounded p-2"
         />
@@ -98,6 +105,57 @@ export default function ProfileForm({ profile, loading, onSave }) {
           <img src={formData.image} alt="Profile" className="w-24 h-24 rounded-full mb-2" />
         )}
         <input type="file" accept="image/*" onChange={handleImageChange} />
+      </div>
+
+      {/* 🥗 Nutrition Goals */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block font-medium">Calorie Goal</label>
+          <input
+            type="number"
+            name="calorie_goal"
+            value={formData.calorie_goal}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+            min="0"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium">Protein Goal (g)</label>
+          <input
+            type="number"
+            name="protein_goal"
+            value={formData.protein_goal}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+            min="0"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium">Carbs Goal (g)</label>
+          <input
+            type="number"
+            name="carbs_goal"
+            value={formData.carbs_goal}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+            min="0"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium">Fat Goal (g)</label>
+          <input
+            type="number"
+            name="fat_goal"
+            value={formData.fat_goal}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+            min="0"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

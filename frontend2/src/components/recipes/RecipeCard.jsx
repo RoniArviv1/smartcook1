@@ -99,8 +99,10 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: userId,
+          recipe_hash,
           title,
           ingredients: formatted,
+          nutrition,
         }),
       });
 

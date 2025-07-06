@@ -16,6 +16,7 @@ from app.routes.scan_routes import scan_bp
 from app.routes.ingredient_routes import ingredient_bp
 from app.routes.spice_routes import spice_bp
 from app.routes.recipe_usage_routes import recipe_usage_bp
+from app.routes.nutrition_routes import nutrition_bp
 
 
 
@@ -60,6 +61,7 @@ def create_app():
     app.register_blueprint(ingredient_bp, url_prefix="/api/ingredient")
     app.register_blueprint(spice_bp, url_prefix="/api/spices")
     app.register_blueprint(recipe_usage_bp, url_prefix="/api/use-recipe")
+    app.register_blueprint(nutrition_bp, url_prefix="/api/nutrition")
 
 
 

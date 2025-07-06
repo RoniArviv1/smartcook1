@@ -40,37 +40,53 @@ def set_preferences(user_id: int, data: dict) -> bool:
 # Profile Logic
 # ---------------------
 
-def get_profile(user_id: int) -> dict:
+def get_profile(user_id):
     user = User.query.get(user_id)
     if not user:
-        return {}
-
+        return None
     return {
-        "firstName": user.first_name or "",
-        "lastName": user.last_name or "",
+        "id": user.id,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
         "email": user.email,
-        "image": user.image_url or "",
-        "password": "",  # לעולם לא מחזירים סיסמה
+        "image": user.image_url,
+        "calorie_goal": user.calorie_goal,
+        "protein_goal": user.protein_goal,
+        "carbs_goal": user.carbs_goal,
+        "fat_goal": user.fat_goal
     }
 
-def update_profile(user_id: int, data: dict) -> bool:
+
+def update_profile(user_id, data):
     user = User.query.get(user_id)
     if not user:
         return False
 
-    user.first_name = data.get("firstName", user.first_name)
-    user.last_name = data.get("lastName", user.last_name)
+    user.first_name = data.get("first_name", user.first_name)
+    user.last_name = data.get("last_name", user.last_name)
     user.email = data.get("email", user.email)
 
-    # עדכון תמונה אם יש
-    if "image" in data:
-        user.image_url = data["image"]
-
-    # עדכון סיסמה רק אם שדה הסיסמה לא ריק
     password = data.get("password")
     if password:
-        user.set_password(password)
+        user.password_hash = password
+
+    user.image_url = data.get("image_url", user.image_url) or data.get("image", user.image_url)
+
+    # 👇 המרה חכמה לשדות מספריים (מאפשר NULL)
+    def parse_number(val):
+        try:
+            return float(val) if val not in [None, ""] else None
+        except (ValueError, TypeError):
+            return None
+
+    user.calorie_goal = parse_number(data.get("calorie_goal"))
+    user.protein_goal = parse_number(data.get("protein_goal"))
+    user.carbs_goal = parse_number(data.get("carbs_goal"))
+    user.fat_goal = parse_number(data.get("fat_goal"))
 
     db.session.commit()
     return True
+
+
+
 

@@ -37,6 +37,11 @@ class User(db.Model):
     last_name = db.Column(db.String(100))   # ✅ חדש
     image_url = db.Column(db.Text)          # ✅ חדש
 
+    calorie_goal = db.Column(db.Float, nullable=True)
+    protein_goal = db.Column(db.Float, nullable=True)
+    carbs_goal = db.Column(db.Float, nullable=True)
+    fat_goal = db.Column(db.Float, nullable=True)
+
     preferences = db.Column(JSON, nullable=True, default=dict)
 
     def set_password(self, password: str):
@@ -125,3 +130,32 @@ class UserSpice(db.Model):
             "spice_name": self.spice_name,
             "added_at": self.added_at.isoformat()
         }
+    
+class NutritionLog(db.Model):
+    __tablename__ = 'nutrition_log'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    recipe_hash = db.Column(db.String, nullable=False)  # ⬅️ במקום recipe_id
+    date = db.Column(db.Date, default=datetime.utcnow, nullable=False)
+
+    calories = db.Column(db.Float, nullable=True)
+    protein = db.Column(db.Float, nullable=True)
+    carbs = db.Column(db.Float, nullable=True)
+    fat = db.Column(db.Float, nullable=True)
+
+    user = db.relationship('User', backref=db.backref('nutrition_logs', lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "recipe_hash": self.recipe_hash,
+            "date": self.date.isoformat(),
+            "calories": self.calories,
+            "protein": self.protein,
+            "carbs": self.carbs,
+            "fat": self.fat
+        }
+

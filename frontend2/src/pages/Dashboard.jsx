@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import RecommendedRecipes from "../components/dashboard/RecommendedRecipes";
 import InventoryStatus from "../components/dashboard/InventoryStatus";
+import NutritionSummary from "../components/dashboard/NutritionSummary";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
@@ -106,7 +107,8 @@ export default function Dashboard() {
       >
         🔄 Refresh Recommendations
       </button>
-
+      
+      <NutritionSummary userId={userId} />
       <RecommendedRecipes recipes={recipes} loading={loading} userId={userId} />
       <InventoryStatus inventory={inventory} loading={loading} />
     </div>

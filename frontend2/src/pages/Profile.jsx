@@ -28,6 +28,14 @@ export default function Profile() {
   };
 
   const handleSave = async (formData) => {
+    
+    const parsedData = {
+    ...formData,
+    calorie_goal: formData.calorie_goal !== "" ? parseFloat(formData.calorie_goal) : null,
+    protein_goal: formData.protein_goal !== "" ? parseFloat(formData.protein_goal) : null,
+    carbs_goal: formData.carbs_goal !== "" ? parseFloat(formData.carbs_goal) : null,
+    fat_goal: formData.fat_goal !== "" ? parseFloat(formData.fat_goal) : null,
+  };
     try {
       const res = await fetch(`http://localhost:5000/api/profile/${userId}`, {
         method: "PUT",
