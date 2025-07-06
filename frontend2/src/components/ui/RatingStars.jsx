@@ -1,28 +1,36 @@
-import React, { useState, useEffect } from "react";
+// src/components/ui/RatingStars.jsx
+import React, { useEffect, useState } from "react";
 import { Star } from "lucide-react";
-import sha256 from "crypto-js/sha256";
 
 export default function RatingStars({ recipe, userId, onRated }) {
-  const [hovered, setHovered] = useState(null);
+  /* -------------------------------------------------- */
+  /* hash comes from backend; if missing we just hide   */
+  /* -------------------------------------------------- */
+  const recipeHash = recipe.recipe_hash;
+
+  /* --------------- hooks (always executed) ----------- */
+  const [hovered,  setHovered]  = useState(null);
   const [selected, setSelected] = useState(null);
-  const [average, setAverage] = useState(recipe.average_rating || 0);
+  const [average,  setAverage]  = useState(Number(recipe.average_rating) || 0);
+  const [numVotes, setNumVotes] = useState(0);
 
-  const recipeHash = recipe.recipe_hash || sha256(JSON.stringify(recipe)).toString();
-
+  /* --------------- fetch average once ---------------- */
   useEffect(() => {
-    if (recipeHash) {
-      fetch(`http://localhost:5000/api/recipes/rating/${recipeHash}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.average_rating !== undefined) {
-            setAverage(data.average_rating);
-          }
-        });
-    }
+    if (!recipeHash) return;
+    fetch(`http://localhost:5000/api/recipes/rating/${recipeHash}`)
+      .then((res) => res.json())
+      .then((d) => {
+        setAverage(Number(d.average_rating) || 0);
+        setNumVotes(d.num_ratings || 0);
+      })
+      .catch(() => {});
   }, [recipeHash]);
 
+  /* ---------------- rating handler ------------------- */
   const handleRate = async (value) => {
+    if (!recipeHash) return;
     setSelected(value);
+
     try {
       const res = await fetch("http://localhost:5000/api/recipes/rate", {
         method: "POST",
@@ -34,37 +42,39 @@ export default function RatingStars({ recipe, userId, onRated }) {
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.recipe_hash) {
-        const ratingRes = await fetch(`http://localhost:5000/api/recipes/rating/${data.recipe_hash}`);
-        const ratingData = await ratingRes.json();
-        if (ratingData.average_rating !== undefined) {
-          setAverage(ratingData.average_rating);
-        }
-        if (onRated) onRated(); // ⬅️ מודיע ל־RecipeCard לעדכן גם שם
+      if (res.ok) {
+        const d = await res.json();
+        setAverage(Number(d.average_rating) || value);
+        setNumVotes(d.num_ratings || numVotes + 1);
+        onRated?.();
       }
     } catch (err) {
       console.error("Rating failed:", err);
     }
   };
 
+  /* ------------- early return AFTER hooks ------------ */
+  if (!recipeHash) return null;
+
+  /* --------------------- render ---------------------- */
   return (
     <div className="flex items-center gap-1 mt-2">
-      {[1, 2, 3, 4, 5].map((value) => (
+      {[1, 2, 3, 4, 5].map((val) => (
         <Star
-          key={value}
+          key={val}
           className={`w-4 h-4 cursor-pointer transition-colors duration-150 ${
-            (hovered || selected || average) >= value
+            (hovered || selected || average) >= val
               ? "fill-yellow-400 stroke-yellow-400"
               : "stroke-gray-400"
           }`}
-          onMouseEnter={() => setHovered(value)}
+          onMouseEnter={() => setHovered(val)}
           onMouseLeave={() => setHovered(null)}
-          onClick={() => handleRate(value)}
+          onClick={() => handleRate(val)}
         />
       ))}
+
       <span className="text-xs text-gray-600 ml-2">
-        {typeof average === "number" ? average.toFixed(1) + " avg" : "No rating yet"}
+        {average > 0 ? `${average.toFixed(1)} (${numVotes})` : "No rating yet"}
       </span>
     </div>
   );

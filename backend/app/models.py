@@ -56,6 +56,10 @@ class InventoryItem(db.Model):
     quantity = db.Column(db.Float, nullable=False)
     unit = db.Column(db.String(20))
     expiration_date = db.Column(db.Date, nullable=False)
+    calories        = db.Column(db.Float)   # kcal
+    protein         = db.Column(db.Float)   # g
+    carbs           = db.Column(db.Float)   # g
+    fat             = db.Column(db.Float)   # g
 
     # FK → users.id
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

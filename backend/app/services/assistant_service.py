@@ -18,7 +18,7 @@ openai.api_base = "https://api.groq.com/openai/v1"
 RESTRICTED = {
     "vegetarian": {"beef", "pork", "chicken", "turkey", "fish", "shrimp", "lamb", "bacon"},
     "vegan": {
-        "beef", "pork", "chicken", "turkey", "fish", "shrimp", "lamb",
+        "beef", "pork", "chicken", "turkey", "fish", "shrimp", "lambqty",
         "milk", "cheese", "butter", "yogurt", "cream", "egg", "honey",
     },
     "gluten free": {
@@ -94,9 +94,9 @@ def _ing_to_str(item: Any) -> str:
     if isinstance(item, str):
         return item
     name = item.get("name", "")
-    qty  = item.get("qty")
+    quantity  = item.get("quantity")
     unit = item.get("unit")
-    return f"{qty} {unit} {name}" if qty and unit else name
+    return f"{quantity} {unit} {name}" if quantity and unit else name
 
 
 
@@ -177,7 +177,7 @@ def suggest_recipes_from_groq(
             '      "prep_minutes": <integer>,\n'
             '      "cook_minutes": <integer>,\n'
             '      "calories_per_serving": <integer|null>,\n'
-            '      "ingredients": [{"qty": <number>, "unit": <string>, "name": <string>}],\n'
+            '      "ingredients": [{"quantity": <number>, "unit": <string>, "name": <string>}],\n'
             '      "instructions": ["Step 1", "Step 2", ..., "Step 8+"]\n'
             "    }, ...\n"
             "  ]\n"

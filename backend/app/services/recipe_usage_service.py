@@ -1,5 +1,5 @@
 #recipe_usage_service.py
-
+from datetime import date, datetime, timedelta
 from app.models import InventoryItem
 from app.extensions import db
 from app.utils.ingredient_utils import classify_ingredient, AVERAGE_WEIGHT
@@ -27,57 +27,77 @@ def update_inventory_after_recipe(user_id: int, ingredients: list) -> dict:
     if not user_id or not ingredients:
         return {"error": "Missing user_id or ingredients"}
 
-    updated_items = []
-    skipped_items = []
-    removed_items = []        # ⭐️ חדש – נעקוב אחרי פריטים שנמחקו
+    updated_items, skipped_items, removed_items = [], [], []
 
-    for ingredient in ingredients:
-        name = ingredient.get("name")
-        used_qty = float(ingredient.get("quantity", 0))
-        used_unit = ingredient.get("unit")
-
+    for ing in ingredients:
+        name = ing.get("name")
+        used_qty = float(ing.get("quantity", 0))
+        used_unit = ing.get("unit")
         if not name or used_qty <= 0 or not used_unit:
             continue
 
-        # שלב 1: נרמול רכיב מהמתכון
+        # --- נרמול כמות מהמתכון ---
         used_qty_norm, used_unit_norm = normalize(name, used_qty, used_unit)
 
-        # שלב 2: שליפת פריט מהמלאי
-        item = InventoryItem.query.filter_by(user_id=user_id, name=name).first()
-        if not item:
+        # --- שליפת *כל* הרשומות של אותו רכיב ---
+        items = (
+            InventoryItem.query
+            .filter_by(user_id=user_id, name=name)
+            .all()
+        )
+        if not items:
             skipped_items.append(name)
             continue
 
-        # שלב 3: נרמול פריט מהמלאי
-        inv_qty_norm, inv_unit_norm = normalize(name, item.quantity, item.unit)
+        # --- ממיינים לפי expiry_date (ללא תאריך → "אינסוף") ---
+        items.sort(key=lambda item: item.expiration_date or date.max)
 
-        # שלב 4: השוואת יחידות
-        if used_unit_norm != inv_unit_norm:
-            skipped_items.append(name)
-            continue
+        # --- צריכה הדרגתית מהפריט הקרוב לפוגה והלאה ---
+        remaining_to_use = used_qty_norm
+        for item in items:
+            # יחידות במלאי → נרמול
+            inv_qty_norm, inv_unit_norm = normalize(name, item.quantity, item.unit)
 
-        # שלב 5: עדכון / מחיקה
-        new_qty = max(inv_qty_norm - used_qty_norm, 0)
+            # דילוג אם היחידות לא תואמות
+            if inv_unit_norm != used_unit_norm:
+                skipped_items.append(name)
+                continue
 
-        if new_qty == 0:
-            # 🔥 מוחקים את הפריט מהמלאי
-            db.session.delete(item)
-            removed_items.append(name)
-        else:
-            item.quantity = new_qty
-            item.unit = inv_unit_norm
-            updated_items.append({
-                "name": name,
-                "unit": inv_unit_norm,
-                "from": round(inv_qty_norm, 2),
-                "to":   round(new_qty,    2)
-            })
+            if remaining_to_use <= 0:
+                break  # סיימנו עם המצרך הזה
+
+            if inv_qty_norm > remaining_to_use:
+                # מספיק בפריט הזה → עדכון כמות
+                item.quantity = inv_qty_norm - remaining_to_use
+                item.unit = inv_unit_norm          # ⭐️ הוספה – מעדכן גם את היחידה!
+                updated_items.append({
+                    "name":   name,
+                    "unit":   inv_unit_norm,
+                    "from":   round(inv_qty_norm, 2),
+                    "to":     round(item.quantity, 2),
+                    "expiry": item.expiration_date.isoformat() if item.expiration_date else None
+                })
+                remaining_to_use = 0
+            else:
+                # צורכים הכול → מחיקה
+                remaining_to_use -= inv_qty_norm
+                removed_items.append({
+                    "name": name,
+                    "unit": inv_unit_norm,
+                    "removed_qty": round(inv_qty_norm, 2),
+                    "expiry": item.expiration_date.isoformat() if item.expiration_date else None
+                })
+                db.session.delete(item)
+
+        # אם כמות המתכון עדיין לא כוסתה – מוסיפים ל-skipped (לא היה מלאי מספיק)
+        if remaining_to_use > 0:
+            skipped_items.append(f"{name} (missing {round(remaining_to_use,2)} {used_unit_norm})")
 
     db.session.commit()
 
     return {
         "message": "Inventory updated after using recipe",
         "updated_items": updated_items,
-        "removed": removed_items,   # ⭐️ מוחזרים הפריטים שנמחקו
+        "removed": removed_items,
         "skipped": skipped_items
     }

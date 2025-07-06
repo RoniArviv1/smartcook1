@@ -1,104 +1,59 @@
+# app/routes/assistant_routes.py
 from flask import Blueprint, request, jsonify
-from app.services.assistant_service import suggest_recipes_from_groq
-from app.services.global_cache import CACHE
 from app.services.recipe_service import get_recommended_recipes
-from app.services.inventory_service import get_user_inventory
-from datetime import date  
-
+from app.services.global_cache import CACHE
 
 assistant_bp = Blueprint("assistant", __name__)
 
 @assistant_bp.route("/assistant", methods=["POST"])
 def handle_assistant():
+    data         = request.get_json(force=True)
+    user_id      = data.get("user_id")
+    user_message = data.get("message", "What can I cook today?")
+    user_prefs   = data.get("user_prefs", {})
+    num_recipes  = int(data.get("num_recipes", 1))
+
     try:
-        data = request.get_json(force=True)
-        user_id      = data.get("user_id")
-        user_message = data.get("message")
-        user_prefs   = data.get("user_prefs", {})
-        prev_recipe  = data.get("prev_recipe")
-        num_recipes  = data.get("num_recipes", 1) 
-
-    
-                
-        raw_inv = get_user_inventory(user_id)          # list[InventoryItem]
-        today   = date.today()  
-
-        ingredients = [
-            {
-                "name": item.name,
-                "qty":  item.quantity,
-                "unit": item.unit
-            }
-            for item in raw_inv
-            if (item.quantity or 0) > 0            # סינון כמות אפס
-               and (                               # ⭐️ סינון תוקף
-                    not getattr(item, "expiration_date", None)
-                    or item.expiration_date >= today
-               )
-        ]
-
-
-
-
-        result = suggest_recipes_from_groq(
-            user_id=user_id,
-            ingredients=ingredients,
-            user_message=user_message,
-            user_prefs=user_prefs,
-            prev_recipe=prev_recipe,
-            num_recipes=num_recipes   # ⬅️ תעביר את זה הלאה
+        recipes = get_recommended_recipes(
+            user_id      = user_id,
+            user_message = user_message,
+            user_prefs   = user_prefs,
+            num_recipes  = num_recipes,
+            save_to_db   = False,
+            use_cache    = False   # <<< חשוב
         )
-
-        # 🛡 בדיקת שגיאה או העדר מתכונים
-        if (
-            not result or
-            "recipes" not in result or
-            not isinstance(result["recipes"], list) or
-            not result["recipes"]
-        ):
-            return jsonify({"recipes": [{"message": "No recipes generated."}]})
-
-        if "error" in result:
-            print("❌ AI returned error:", result["error"])
-            return jsonify({
-                "error": f"AI Error: {result['error']}",
-                "recipes": []
-            }), 500
-
-        return jsonify({
-            "user_id": result["user_id"],
-            "recipes": result["recipes"]
-        })
-
-    except Exception as e:
-        print("❌ SERVER ERROR:", e)
-        return jsonify({"error": str(e)}), 500
+        if not recipes:
+            return jsonify({"recipes": [{"message": "No recipes generated."}]}), 200
+        print("recipes11",recipes)
+        return jsonify({"user_id": user_id, "recipes": recipes}), 200
+    except Exception as exc:
+        print("❌ SERVER ERROR:", exc)
+        return jsonify({"error": str(exc)}), 500
 
 
-
+# --------------------------------------------------------------
+#  POST /api/assistant/refresh/<user_id>   – dashboard refresh
+# --------------------------------------------------------------
 @assistant_bp.route("/assistant/refresh/<int:user_id>", methods=["POST"])
 def refresh_recommendations(user_id):
-    data = request.get_json() or {}
-    user_prefs = data.get("user_prefs", {})
+    """
+    Clears user-specific cache and returns a fresh batch (3 recipes)
+    for the dashboard widget.
+    """
+    data         = request.get_json() or {}
+    user_prefs   = data.get("user_prefs", {})
     user_message = data.get("user_message", "What can I cook today?")
-    print("cache", CACHE)
-    # מחיקת הקאש כדי להכריח AI חדש
+
+    # purge cache so recipe_service must call the AI again
     if user_id in CACHE:
-        exclude = [r['title'] for r in CACHE[user_id]]
-        if exclude:
-            user_message+= f' Please exclude these recipes: {','.join(exclude)}'
         del CACHE[user_id]
-   
 
-    print("user_message", user_message)
-
-    # הפקת מתכונים חדשים
     new_recipes = get_recommended_recipes(
-        user_id=user_id,
-        user_message=user_message,
-        user_prefs=user_prefs,
-        save_to_db=False  # או True אם אתה רוצה לשמור
+        user_id      = user_id,
+        user_message = user_message,
+        user_prefs   = user_prefs,
+        num_recipes  = 3,
+        save_to_db   = False,
     )
 
-    return jsonify({"recipes": new_recipes})
-
+    return jsonify({"recipes": new_recipes}), 200
