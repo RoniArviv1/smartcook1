@@ -10,7 +10,6 @@ import ChatMessage from "./ChatMessage";
 import SuggestedRecipes from "./SuggestedRecipes";
 import { Link } from "react-router-dom";
 
-/* ────────────── קבוצות אופציות ────────────── */
 const MULTI_OPTS   = ["Lower calories", "Faster to make"];
 const INSTANT_OPTS = ["Show me another recipe", "Surprise me"];
 const FLOW_OPTS    = [
@@ -26,14 +25,14 @@ const SINGLE_MAP = {
     "Surprise me with something unexpected and creative using my preferences."
 };
 
-/* ═══════════ קומפוננטת SmartCook Assistant ═══════════ */
 export default function KitchenAssistant({
   inventory,
   userName,
   userId,
-  onSendMessage
+  onSendMessage,
+  useExpiring,
+  setUseExpiring
 }) {
-  /* ────────── state הודעות ────────── */
   const [messages, setMessages] = useState([
     {
       type: "assistant",
@@ -43,21 +42,22 @@ export default function KitchenAssistant({
   const [lastRecipeIndex, setLastRecipeIndex] = useState(null);
   const messagesEndRef = useRef(null);
 
-  /* ────────── בחירה מרובה + Spice ────────── */
   const [pendingOpts, setPendingOpts] = useState([]);
-  const [spiceState,  setSpiceState]  = useState("none");   // none | more | mild
+  const [spiceState,  setSpiceState]  = useState("none");
 
-  /* ────────── זרימות נוספות ────────── */
   const [awaitingExclusion, setAwaitingExclusion] = useState(false);
   const [excludedItems,     setExcludedItems]     = useState([]);
   const [awaitingInclude,   setAwaitingInclude]   = useState(false);
   const [includeItems,      setIncludeItems]      = useState([]);
   const [choosingCuisine,   setChoosingCuisine]   = useState(false);
+  const [selectedCuisine, setSelectedCuisine] = useState(null);
 
-  /* ────────── פרופיל ושמורים ────────── */
-  const [showProfile, setShowProfile] = useState(false);
-  const [profileData, setProfileData] = useState(null);
+
+
   const [savedRecipes, setSavedRecipes] = useState([]);
+  const [showSaved,    setShowSaved]    = useState(false);
+  const [openSavedIdx, setOpenSavedIdx] = useState(null);
+  const [mealType, setMealType] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:5000/api/recipes/saved/${userId}`)
@@ -65,14 +65,7 @@ export default function KitchenAssistant({
       .then(setSavedRecipes)
       .catch(console.error);
   }, [userId]);
-  
 
-
-
-  const [showSaved,    setShowSaved]    = useState(false);
-  const [openSavedIdx, setOpenSavedIdx] = useState(null);
-
-  /* ────────── אפקטים ────────── */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -81,19 +74,27 @@ export default function KitchenAssistant({
     localStorage.setItem("smartcook_saved", JSON.stringify(savedRecipes));
   }, [savedRecipes]);
 
-  /* ────────── פונקציות עזר ────────── */
   const buildMods = () => {
     const parts = [];
     if (pendingOpts.length)
       parts.push(pendingOpts.map(o => o.toLowerCase()).join(" and "));
     if (spiceState === "more") parts.push("spicier");
     if (spiceState === "mild") parts.push("mild (no spice)");
+    if (excludedItems.length)
+      parts.push(`exclude: ${excludedItems.join(", ")}`);
+    if (includeItems.length)
+      parts.push(`MUST include: ${includeItems.join(", ")}`);
+    if (mealType)
+      parts.push(`suitable for ${mealType}`);
+    if (selectedCuisine)
+      parts.push(`in a ${selectedCuisine} style`);
     return parts.join(" and ");
   };
 
   const resetMods = () => {
     setPendingOpts([]);
     setSpiceState("none");
+    setMealType(null);
   };
 
   const sendUserMessage = async (msg) => {
@@ -103,12 +104,12 @@ export default function KitchenAssistant({
         {
           type: "assistant",
           content:
-            "🧺 It looks like your ingredient list is empty. Please add some ingredients to your inventory so I can recommend a recipe 😊",
+            "🫑 It looks like your ingredient list is empty. Please add some ingredients to your inventory so I can recommend a recipe 😊",
         },
       ]);
       return;
     }
-  
+
     setMessages(prev => [...prev, { type: "user", content: msg }]);
     const res = await onSendMessage(msg, messages.slice(-4));
     setMessages(prev => [
@@ -122,50 +123,50 @@ export default function KitchenAssistant({
     if (res.recipes?.length) setLastRecipeIndex(messages.length + 1);
   };
 
-  /* ────────── Profile fetch ────────── */
-  const fetchProfile = async () => {
-    try {
-      const r = await fetch(`http://localhost:5000/api/preferences/${userId}`);
-      if (r.ok) setProfileData(await r.json());
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  /* ────────── Apply / Cancel ────────── */
   const applyPending = async () => {
-    if (!pendingOpts.length && spiceState === "none") return;
+    const mods = buildMods(); // ❗ שימוש בפונקציה המרכזית
+
+    if (!mods) return;
 
     if (
       pendingOpts.length === 1 &&
       spiceState === "none" &&
+      excludedItems.length === 0 &&
+      includeItems.length === 0 &&
+      !mealType && // חשוב: לא לאפשר instant אם יש mealType
+      !selectedCuisine &&
       INSTANT_OPTS.includes(pendingOpts[0])
     ) {
       await sendUserMessage(SINGLE_MAP[pendingOpts[0]]);
-      return resetMods();
+    } else {
+      await sendUserMessage(`Please make the last recipe ${mods}.`);
     }
 
-    await sendUserMessage(`Please make the last recipe ${buildMods()}.`);
     resetMods();
+    setExcludedItems([]);
+    setIncludeItems([]);
+    setSelectedCuisine(null);
   };
 
-  const cancelPending = () => resetMods();
 
-  /* ────────── Exclude / Include / Cuisine combined submit ────────── */
+  const cancelPending = () => {
+    resetMods();
+    setExcludedItems([]);
+    setIncludeItems([]);
+  };
+
   const submitExclude = async () => {
     if (!excludedItems.length) return;
-  
-    // 🧠 רכיבים שלא ניתן לבשל מהם מתכון לבד
+
     const NON_STANDALONE_INGREDIENTS = [
       "butter", "salt", "pepper", "oil", "spices", "sugar", "water"
     ];
-  
-    // 🧮 סינון רכיבים שמישרים אחרי ההחרגה
+
     const remainingIngredients = inventory
       .map(it => it.name.toLowerCase())
       .filter(name => !excludedItems.map(e => e.toLowerCase()).includes(name))
       .filter(name => !NON_STANDALONE_INGREDIENTS.includes(name));
-  
+
     if (remainingIngredients.length === 0) {
       setMessages(prev => [
         ...prev,
@@ -179,38 +180,25 @@ export default function KitchenAssistant({
       setExcludedItems([]);
       return;
     }
-  
-    const txt = buildMods()
-      ? `Please make the last recipe ${buildMods()} and exclude: ${excludedItems.join(", ")}.`
-      : `Please adjust the last recipe to exclude: ${excludedItems.join(", ")}.`;
-  
-    await sendUserMessage(txt);
+
     setAwaitingExclusion(false);
-    setExcludedItems([]);
-    resetMods();
   };
-  
+
   const submitInclude = async () => {
     if (!includeItems.length) return;
-    const txt = buildMods()
-      ? `Please make the last recipe ${buildMods()} and MUST include: ${includeItems.join(", ")}.`
-      : `Please suggest a recipe that MUST include: ${includeItems.join(", ")}.`;
-    await sendUserMessage(txt);
     setAwaitingInclude(false);
-    setIncludeItems([]);
-    resetMods();
   };
 
-  const submitCuisine = async (style) => {
-    const txt = buildMods()
-      ? `Please make the last recipe ${buildMods()} in a ${style} style.`
-      : `Please suggest a ${style} style recipe using my preferences.`;
-    await sendUserMessage(txt);
+
+  const submitCuisine = async () => {
+    if (!selectedCuisine) return;
     setChoosingCuisine(false);
-    resetMods();
   };
 
-  /* ────────── toggle helpers ────────── */
+
+
+
+
   const togglePending = (opt) =>
     setPendingOpts(prev =>
       prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]
@@ -219,39 +207,39 @@ export default function KitchenAssistant({
   const toggleItem = (name, list, setter) =>
     setter(list.includes(name) ? list.filter(i => i !== name) : [...list, name]);
 
-  /* ────────── save / delete recipe ────────── */
   const saveRecipe = async (r) => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(r),
-    });
-    if (res.ok) {
-      setSavedRecipes(prev => [...prev, r]);
-    } else {
-      console.error("❌ Failed to save recipe");
+    try {
+      const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(r),
+      });
+      if (res.ok) {
+        setSavedRecipes(prev => [...prev, r]);
+      } else {
+        console.error("❌ Failed to save recipe");
+      }
+    } catch (err) {
+      console.error("❌ Error saving recipe:", err);
     }
-  } catch (err) {
-    console.error("❌ Error saving recipe:", err);
-  }
-};
-    const deleteRecipe = async (title) => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-    if (res.ok) {
-      setSavedRecipes(savedRecipes.filter((r) => r.title !== title));
-    } else {
-      console.error("❌ Failed to delete from server");
+  };
+
+  const deleteRecipe = async (title) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (res.ok) {
+        setSavedRecipes(savedRecipes.filter((r) => r.title !== title));
+      } else {
+        console.error("❌ Failed to delete from server");
+      }
+    } catch (err) {
+      console.error("❌ Failed to delete recipe:", err);
     }
-  } catch (err) {
-    console.error("❌ Failed to delete recipe:", err);
-  }
-};
+  };
 
 
   /* ═══════════════ render ═══════════════ */
@@ -359,7 +347,6 @@ export default function KitchenAssistant({
                     </Button>
                   );
                 })}
-
                 {/* Instant opts */}
                 {INSTANT_OPTS.map(opt => {
                   const sel = pendingOpts.includes(opt);
@@ -374,6 +361,44 @@ export default function KitchenAssistant({
                     </Button>
                   );
                 })}
+                {/* Meal Type selector */}
+                <div className="w-full mt-4">
+                  <p className="text-sm text-gray-600 mb-1">Meal time preference:</p>
+                  <div className="flex gap-2">
+                    {["breakfast", "lunch", "dinner"].map(meal => {
+                      const capitalized = meal.charAt(0).toUpperCase() + meal.slice(1);
+                      const selected = mealType === meal;
+                      return (
+                        <Button
+                          key={meal}
+                          variant={selected ? "selected" : "outline"}
+                          className="text-sm flex items-center gap-1"
+                          onClick={() => setMealType(selected ? null : meal)} // לחיצה שנייה מבטלת
+                        >
+                          {selected && "✔︎"} {capitalized}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+
+                {/* Expiring*/}
+                <div className="w-full mt-4 border-t pt-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="useExpiring"
+                      checked={useExpiring}
+                      onChange={() => setUseExpiring(!useExpiring)}
+                      className="accent-orange-500"
+                    />
+                    <label htmlFor="useExpiring" className="text-sm text-gray-700">
+                      Use ingredients that are about to expire
+                    </label>
+                  </div>
+                </div>
+
 
                 {/* Flow triggers */}
                 {FLOW_OPTS.map(opt => (
@@ -474,15 +499,17 @@ export default function KitchenAssistant({
                       toggleItem(name, includeItems, setIncludeItems)
                     }
                   >
-                    {sel ? <CheckSquare size={14} /> : <Square size={14} />}{" "}
-                    {name}
+                    {sel ? <CheckSquare size={14} /> : <Square size={14} />} {name}
                   </Button>
                 );
               })}
             </div>
             <div className="flex gap-2">
-              <Button className="bg-orange-500 text-white" onClick={submitInclude}>
-                Apply Inclusion
+              <Button
+                className="bg-orange-500 text-white"
+                onClick={submitInclude} // לא שולח שום הודעה, רק סוגר את הפאנל
+              >
+                Done
               </Button>
               <Button
                 variant="ghost"
@@ -507,23 +534,41 @@ export default function KitchenAssistant({
                 c => (
                   <Button
                     key={c}
-                    className="text-sm"
-                    onClick={() => submitCuisine(c.toLowerCase())}
+                    className={`text-sm ${
+                      selectedCuisine === c.toLowerCase() ? "selected" : ""
+                    }`}
+                    onClick={() => setSelectedCuisine(
+                      selectedCuisine === c.toLowerCase() ? null : c.toLowerCase()
+                    )}
                   >
-                    {c}
+                    {selectedCuisine === c.toLowerCase() && "✔︎"} {c}
                   </Button>
                 )
               )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                className="bg-orange-500 text-white"
+                onClick={submitCuisine}
+                disabled={!selectedCuisine}
+              >
+                Apply
+              </Button>
               <Button
                 variant="ghost"
-                className="text-sm text-gray-600"
-                onClick={() => setChoosingCuisine(false)}
+                className="text-sm flex items-center gap-1"
+                onClick={() => {
+                  setChoosingCuisine(false);
+                  setSelectedCuisine(null);
+                }}
               >
-                Cancel
+                <CornerUpLeft size={16} /> Back
               </Button>
             </div>
           </div>
         )}
+
+
       </div>
 
       {/* -------- Saved Recipes -------- */}

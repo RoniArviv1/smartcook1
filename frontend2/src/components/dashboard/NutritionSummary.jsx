@@ -1,121 +1,101 @@
 import React, { useEffect, useState } from "react";
-import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function NutritionSummary({ userId }) {
-  const [summary, setSummary] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [goals, setGoals] = useState({});
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState("daily"); // "daily" or "weekly"
+  const [mode, setMode] = useState("weekly"); // "weekly" or "daily"
 
   useEffect(() => {
-    if (!userId) return;
+    loadSummary();
+  }, [mode]);
 
-    const fetchSummary = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `http://localhost:5000/api/nutrition/summary?user_id=${userId}&days=7&group=${view}`
-        );
-        const data = await res.json();
-        setSummary(data);
-      } catch (err) {
-        console.error("Failed to load nutrition summary", err);
-      } finally {
-        setLoading(false);
+  const loadSummary = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/nutrition/summary?user_id=${userId}&group=${mode}`
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
-    };
 
-    fetchSummary();
-  }, [userId, view]);
-
-  const switchView = () => {
-    setView(view === "daily" ? "weekly" : "daily");
+      const data = await res.json();
+      setSummary(data.summary);
+      setGoals(data.goals || {});
+    } catch (error) {
+      console.error("Error loading nutrition summary:", error);
+      setSummary(null); // Reset summary if error
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <p className="text-sm text-gray-500">Loading nutrition summary...</p>;
-  if (!summary.length) return <p className="text-sm text-gray-500">No nutrition data found.</p>;
-
-  const avg = summary[0]?.average_per_day || {};
-  const weeklyAvgChartData = {
-    labels: ["Calories", "Protein", "Carbs", "Fat"],
-    datasets: [
-      {
-        label: "Avg per day",
-        data: [
-          avg.calories || 0,
-          avg.protein || 0,
-          avg.carbs || 0,
-          avg.fat || 0,
-        ],
-        backgroundColor: [
-          "rgba(255, 159, 64, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-          "rgba(255, 205, 86, 0.6)",
-        ],
-      },
-    ],
+  const renderBar = (label, value, goal) => {
+    const achieved = goal && value >= goal;
+    return (
+      <div className="mb-2">
+        <div className="flex justify-between text-sm font-medium">
+          <span>{label}</span>
+          <span>
+            {value} / {goal || "?"}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 h-2 rounded">
+          <div
+            className={`h-2 rounded ${achieved ? "bg-green-500" : "bg-yellow-400"}`}
+            style={{
+              width: goal ? `${Math.min((value / goal) * 100, 100)}%` : "0%",
+            }}
+          />
+        </div>
+      </div>
+    );
   };
+
+  if (loading) return <p>Loading nutrition summary...</p>;
 
   return (
-    <div className="bg-white p-4 rounded shadow max-w-md mb-6">
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-semibold">
-          🧾 Nutrition Summary ({view === "daily" ? "7 Days" : "Weekly Total"})
-        </h2>
+    <div className="bg-white shadow-md rounded-xl p-6 mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">🥗 Nutrition Summary</h2>
         <button
-          onClick={switchView}
-          className="text-xs text-blue-600 hover:underline"
+          onClick={() => setMode(mode === "weekly" ? "daily" : "weekly")}
+          className="text-sm text-blue-600 underline"
         >
-          {view === "daily" ? "View Weekly" : "View Daily"}
+          View {mode === "weekly" ? "Daily" : "Weekly"}
         </button>
       </div>
 
-      {view === "daily" ? (
-        <ul className="space-y-2 text-sm">
-          {summary.map((day, index) => (
-            <li key={index} className="border rounded p-2">
-              <div className="font-medium mb-1">{day.date}</div>
-              <div className="grid grid-cols-2 gap-x-4 text-xs text-gray-700">
-                <div>Calories: {day.calories}</div>
-                <div>Protein: {day.protein} g</div>
-                <div>Carbs: {day.carbs} g</div>
-                <div>Fat: {day.fat} g</div>
+      {mode === "weekly" && summary?.average_per_day ? (
+        <div>
+          <p className="font-medium text-gray-700 mb-2">Daily Averages</p>
+          {renderBar("Calories", summary.average_per_day.calories, goals.calorie_goal)}
+          {renderBar("Protein (g)", summary.average_per_day.protein, goals.protein_goal)}
+          {renderBar("Carbs (g)", summary.average_per_day.carbs, goals.carbs_goal)}
+          {renderBar("Fat (g)", summary.average_per_day.fat, goals.fat_goal)}
+        </div>
+      ) : null}
+
+      {mode === "daily" && Array.isArray(summary) && summary.length > 0 && (
+        <div className="space-y-4">
+          {summary
+            .filter((entry) => entry.date === new Date().toISOString().slice(0, 10))
+            .map((entry) => (
+              <div key={entry.date} className="border-b pb-2">
+                <p className="font-medium text-gray-800">{entry.date}</p>
+                {renderBar("Calories", entry.calories, goals.calorie_goal)}
+                {renderBar("Protein (g)", entry.protein, goals.protein_goal)}
+                {renderBar("Carbs (g)", entry.carbs, goals.carbs_goal)}
+                {renderBar("Fat (g)", entry.fat, goals.fat_goal)}
               </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <>
-          <div className="border rounded p-2 text-xs space-y-1">
-            <div className="font-medium text-sm mb-1">📊 Weekly Totals</div>
-            <div>Calories: {summary[0]?.total?.calories ?? 0}</div>
-            <div>Protein: {summary[0]?.total?.protein ?? 0} g</div>
-            <div>Carbs: {summary[0]?.total?.carbs ?? 0} g</div>
-            <div>Fat: {summary[0]?.total?.fat ?? 0} g</div>
-          </div>
+            ))}
+        </div>
+      )}
 
-          <div className="border rounded p-2 text-xs space-y-1 mt-2">
-            <div className="font-medium text-sm mb-1">📅 Daily Averages</div>
-            <div>Calories/day: {avg.calories ?? 0}</div>
-            <div>Protein/day: {avg.protein ?? 0} g</div>
-            <div>Carbs/day: {avg.carbs ?? 0} g</div>
-            <div>Fat/day: {avg.fat ?? 0} g</div>
-          </div>
-
-          <div className="mt-4">
-            <Bar data={weeklyAvgChartData} options={{ responsive: true }} />
-          </div>
-        </>
+      {mode === "daily" && (!summary || summary.length === 0) && (
+        <p className="text-sm text-gray-500">No data logged in the past 7 days.</p>
       )}
     </div>
   );

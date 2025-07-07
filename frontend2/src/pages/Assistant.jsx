@@ -14,7 +14,7 @@ export default function Assistant() {
   const [userPrefs, setUserPrefs] = useState({});
   const [loading, setLoading] = useState(true);
   const [lastRecipe, setLastRecipe] = useState(null);
-
+  const [useExpiring, setUseExpiring] = useState(false);
   const messagesEndRef = useRef(null);
 
   /* ------------------- load data ---------------- */
@@ -45,13 +45,9 @@ export default function Assistant() {
     const payload = {
       user_id: userId,
       message,
-      ingredients: inventory.map(({ name, quantity, unit }) => ({
-        name,
-        qty: quantity,
-        unit,
-      })),
       user_prefs: userPrefs,
       prev_recipe: lastRecipe || null,  // ✅ שימו לב – רק אובייקט או null
+      use_expiring_soon: useExpiring
     };
 
     try {
@@ -92,6 +88,8 @@ export default function Assistant() {
         userPrefs={userPrefs}
         userName={userName}
         userId={userId}
+        useExpiring={useExpiring}
+        setUseExpiring={setUseExpiring}
       />
       <div ref={messagesEndRef} />
     </div>

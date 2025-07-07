@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.models import NutritionLog
+from app.models import NutritionLog, User
 from sqlalchemy import func
 from datetime import datetime, timedelta
 
@@ -22,8 +22,19 @@ def get_nutrition_summary():
         .filter(NutritionLog.date >= start_date)
     )
 
+    # שליפת יעדים תזונתיים מהמשתמש
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user_goals = {
+        "calorie_goal": user.calorie_goal,
+        "protein_goal": user.protein_goal,
+        "carbs_goal": user.carbs_goal,
+        "fat_goal": user.fat_goal
+    }
+
     if group_mode == "weekly":
-        # קבלת רשומות לפי ימים (נשתמש בהם לחישוב ממוצע)
         daily_logs = base_query.with_entities(
             NutritionLog.date,
             func.sum(NutritionLog.calories).label("calories"),
@@ -35,12 +46,11 @@ def get_nutrition_summary():
         total_days = len(daily_logs)
 
         if total_days == 0:
-            return jsonify([{
+            return jsonify({"summary": {
                 "total": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0},
                 "average_per_day": {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
-            }])
+            }, "goals": user_goals})
 
-        # סכום כללי לשבוע
         totals = {
             "calories": sum(log.calories or 0 for log in daily_logs),
             "protein": sum(log.protein or 0 for log in daily_logs),
@@ -48,22 +58,19 @@ def get_nutrition_summary():
             "fat": sum(log.fat or 0 for log in daily_logs)
         }
 
-        # ממוצע ליום
         averages = {
             k: round(v / total_days, 2)
             for k, v in totals.items()
         }
 
-        # עיגול סיכומים
         totals = {k: round(v, 2) for k, v in totals.items()}
 
-        return jsonify([{
+        return jsonify({"summary": {
             "total": totals,
             "average_per_day": averages
-        }])
+        }, "goals": user_goals})
 
     else:
-        # מצב יומי
         logs = base_query.with_entities(
             NutritionLog.date,
             func.sum(NutritionLog.calories).label("calories"),
@@ -72,7 +79,7 @@ def get_nutrition_summary():
             func.sum(NutritionLog.fat).label("fat")
         ).group_by(NutritionLog.date).order_by(NutritionLog.date.desc()).all()
 
-        return jsonify([
+        daily_summary = [
             {
                 "date": log.date.isoformat(),
                 "calories": round(log.calories or 0, 2),
@@ -81,4 +88,6 @@ def get_nutrition_summary():
                 "fat": round(log.fat or 0, 2)
             }
             for log in logs
-        ])
+        ]
+
+        return jsonify({"summary": daily_summary, "goals": user_goals})

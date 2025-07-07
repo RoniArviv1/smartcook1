@@ -1,5 +1,6 @@
 # app/services/recipe_service.py
 from datetime import datetime
+from datetime import timedelta
 from app.models import InventoryItem
 from app.services.assistant_service import suggest_recipes_from_groq
 from app.services.saved_recipe_service import save_recipe
@@ -16,6 +17,9 @@ def get_recommended_recipes(
     save_to_db: bool = False,
     num_recipes: int = 3,
     use_cache: bool = True,          # ← NEW flag
+    use_expiring_soon: bool = False,
+    prev_recipe: dict = None 
+    
 ) -> list[dict]:
     """
     Returns a list of recipes.  
@@ -30,8 +34,22 @@ def get_recommended_recipes(
     # ---------- Build inventory string ----------
     items = InventoryItem.query.filter_by(user_id=user_id).all()
     today = datetime.utcnow().date()
-    valid_items = [i for i in items if not i.expiration_date or i.expiration_date >= today]
-    inventory = [i.name.lower() for i in valid_items]
+    if use_expiring_soon:
+        # נכניס רק מוצרים שתוקפם בתוך 3 ימים מהיום
+        inventory_items = [
+            item for item in items
+            if item.expiration_date and today <= item.expiration_date <= today + timedelta(days=3)
+        ]
+    else:
+        # נכניס רק מוצרים תקפים (לא פגו תוקף)
+        inventory_items = [
+            item for item in items
+            if not item.expiration_date or item.expiration_date >= today
+        ]
+
+    inventory = [item.name.lower() for item in inventory_items]
+    print("inventory_recSERV",inventory)
+
 
     recipes, seen_titles, best_partial = [], set(), []
     attempts, max_attempts = 0, 4
@@ -43,6 +61,7 @@ def get_recommended_recipes(
             ingredients=inventory,
             user_message=user_message,
             user_prefs=user_prefs,
+            prev_recipe=prev_recipe
         )
 
         if "error" in result:
