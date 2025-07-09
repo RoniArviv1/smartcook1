@@ -66,6 +66,7 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
   /* --------------------- save recipe -------------------- */
   const handleSave = async () => {
     try {
+      console.log("🔍 recipe being saved:", recipe);
       const res = await fetch(
         `http://localhost:5000/api/recipes/saved/${userId}`,
         {

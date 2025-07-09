@@ -60,7 +60,7 @@ class InventoryItem(db.Model):
     category = db.Column(db.String(50))
     quantity = db.Column(db.Float, nullable=False)
     unit = db.Column(db.String(20))
-    expiration_date = db.Column(db.Date, nullable=False)
+    expiration_date = db.Column(db.Date, nullable=True)
     calories        = db.Column(db.Float)   # kcal
     protein         = db.Column(db.Float)   # g
     carbs           = db.Column(db.Float)   # g

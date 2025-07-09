@@ -141,6 +141,7 @@ def _ensure_nutrition(item: InventoryItem) -> None:
 
     nutri = fetch_nutrition(item.name)
     if nutri:
+        print(nutri)
         item.calories = nutri.get("calories")
         item.protein  = nutri.get("protein")
         item.carbs    = nutri.get("carbs")

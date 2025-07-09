@@ -209,6 +209,7 @@ export default function KitchenAssistant({
 
   const saveRecipe = async (r) => {
     try {
+      console.log("📦 saving recipe:", r);
       const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

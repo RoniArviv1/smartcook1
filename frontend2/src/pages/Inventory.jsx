@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import InventoryList from "../components/inventory/InventoryList";
 import AddIngredientForm from "../components/inventory/AddIngredientForm";
-import ScanModal from "../components/inventory/ScanModal";
-import SpiceSelector from "../components/inventory/SpiceSelector"; // ✅ חדש
+import SpiceSelector from "../components/inventory/SpiceSelector";
 
 export default function Inventory() {
   const [ingredients, setIngredients] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
-  const [scannedBarcode, setScannedBarcode] = useState("");
-  const [scannedProduct, setScannedProduct] = useState(null);
+  const navigate = useNavigate();
 
-  const storedUser =
-    JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
+  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
   const userId = storedUser.user_id || storedUser.id || 1;
 
   useEffect(() => {
@@ -44,8 +41,6 @@ export default function Inventory() {
       });
 
       if (!res.ok) throw new Error(`POST failed: ${res.status}`);
-      const newItem = await res.json();
-
       await loadIngredients();
       setShowAddForm(false);
     } catch (error) {
@@ -55,14 +50,11 @@ export default function Inventory() {
 
   const handleUpdateIngredient = async (id, updates) => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/inventory/${userId}/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updates),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/inventory/${userId}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
       if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
       loadIngredients();
     } catch (error) {
@@ -72,44 +64,14 @@ export default function Inventory() {
 
   const handleDeleteIngredient = async (id) => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/inventory/${userId}/${id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`http://localhost:5000/api/inventory/${userId}/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
       loadIngredients();
     } catch (error) {
       console.error("❌ Error deleting ingredient:", error);
     }
-  };
-
-  const handleBarcodeDetected = (barcode) => {
-    console.log("✅ Scanned barcode:", barcode);
-    setScannedBarcode(barcode);
-
-    const existing = ingredients.find((item) => item.barcode === barcode);
-    if (existing) {
-      alert("📦 A product with this barcode already exists in your inventory!");
-      setScannedProduct(null);
-      return;
-    }
-
-    setScannedProduct({
-      name: "Scanned product",
-      barcode,
-    });
-  };
-
-  const handleConfirmAdd = async () => {
-    if (!scannedProduct) return;
-    await handleAddIngredient({
-      name: scannedProduct.name,
-      barcode: scannedProduct.barcode,
-      quantity: 1,
-      category: "unknown",
-    });
-    setScannedProduct(null);
-    setScannedBarcode("");
   };
 
   return (
@@ -125,36 +87,15 @@ export default function Inventory() {
         </button>
 
         <button
-          onClick={() => setIsScanModalOpen(true)}
+          onClick={() => navigate("/scan")}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           📷 Scan Barcode
         </button>
       </div>
 
-      {/* ✅ תבלינים */}
+      {/* קומפוננטת בחירת תבלינים */}
       <SpiceSelector userId={userId} />
-
-      {/* סריקת ברקוד */}
-      <ScanModal
-        isOpen={isScanModalOpen}
-        onClose={() => setIsScanModalOpen(false)}
-        onDetected={handleBarcodeDetected}
-      />
-
-      {scannedProduct && (
-        <div className="p-4 border rounded bg-gray-100">
-          <h4 className="font-bold mb-2">🔍 New product detected:</h4>
-          <p><strong>Name:</strong> {scannedProduct.name}</p>
-          <p><strong>Barcode:</strong> {scannedProduct.barcode}</p>
-          <button
-            onClick={handleConfirmAdd}
-            className="mt-3 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-          >
-            ➕ Add to Inventory
-          </button>
-        </div>
-      )}
 
       {showAddForm && (
         <AddIngredientForm

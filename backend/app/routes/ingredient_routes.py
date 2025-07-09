@@ -18,4 +18,4 @@ def get_units_for_ingredient():
 
     print(f"✅ Allowed units for '{name}': {units}")  # ✅ לוג יחידות מאושרות
 
-    return jsonify({"units": units})
+    return jsonify(get_allowed_units(name))

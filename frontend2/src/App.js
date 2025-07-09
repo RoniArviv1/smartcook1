@@ -18,7 +18,8 @@ function NavigationBar({ isLoggedIn, username, imageUrl, handleLogout }) {
   return (
     <nav className="bg-white/80 backdrop-blur shadow-md px-6 py-4 sticky top-0 z-50">
       <div className="flex justify-between items-center">
-        <ul className="flex gap-6">
+        {/* צד שמאל – ניווט עיקרי */}
+        <ul className="flex gap-6 items-center">
           {isLoggedIn && (
             <>
               <li>
@@ -34,9 +35,9 @@ function NavigationBar({ isLoggedIn, username, imageUrl, handleLogout }) {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/preferences" className={({ isActive }) =>
-                  isActive ? "font-bold text-green-500 border-b-2 border-green-400 pb-1" : "hover:text-green-400 transition"}>
-                  Preferences
+                <NavLink to="/scan" className={({ isActive }) =>
+                  isActive ? "font-bold text-yellow-500 border-b-2 border-yellow-400 pb-1" : "hover:text-yellow-400 transition"}>
+                  Scan
                 </NavLink>
               </li>
               <li>
@@ -45,29 +46,22 @@ function NavigationBar({ isLoggedIn, username, imageUrl, handleLogout }) {
                   Assistant
                 </NavLink>
               </li>
-              <li>
-                <NavLink to="/profile" className={({ isActive }) =>
-                  isActive ? "font-bold text-orange-500 border-b-2 border-orange-400 pb-1" : "hover:text-orange-400 transition"}>
-                  Profile
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/scan" className={({ isActive }) =>
-                  isActive ? "font-bold text-yellow-500 border-b-2 border-yellow-400 pb-1" : "hover:text-yellow-400 transition"}>
-                  Scan
-                </NavLink>
-              </li>
             </>
           )}
         </ul>
-        <div className="flex gap-4 items-center">
-          {!isLoggedIn ? (
+
+        {/* צד ימין – הגדרות ופרופיל */}
+        <div className="flex items-center gap-6">
+          {isLoggedIn && (
             <>
-              <NavLink to="/login" className="text-sm text-gray-600 hover:text-blue-500">Login</NavLink>
-              <NavLink to="/register" className="text-sm text-gray-600 hover:text-green-500">Register</NavLink>
-            </>
-          ) : (
-            <div className="flex items-center gap-3">
+              <NavLink to="/preferences" className={({ isActive }) =>
+                isActive ? "font-bold text-green-500 border-b-2 border-green-400 pb-1" : "hover:text-green-400 transition"}>
+                Preferences
+              </NavLink>
+              <NavLink to="/profile" className={({ isActive }) =>
+                isActive ? "font-bold text-orange-500 border-b-2 border-orange-400 pb-1" : "hover:text-orange-400 transition"}>
+                Profile
+              </NavLink>
               {imageUrl && (
                 <img
                   src={imageUrl}
@@ -82,13 +76,20 @@ function NavigationBar({ isLoggedIn, username, imageUrl, handleLogout }) {
               >
                 Logout
               </button>
-            </div>
+            </>
+          )}
+          {!isLoggedIn && (
+            <>
+              <NavLink to="/login" className="text-sm text-gray-600 hover:text-blue-500">Login</NavLink>
+              <NavLink to="/register" className="text-sm text-gray-600 hover:text-green-500">Register</NavLink>
+            </>
           )}
         </div>
       </div>
     </nav>
   );
 }
+
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
