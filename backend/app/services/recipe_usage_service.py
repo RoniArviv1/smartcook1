@@ -8,6 +8,7 @@ from app.utils.unit_normalizer import UNIT_MAP
 def normalize(name: str, qty: float, unit: str) -> tuple[float, str]:
     name = name.lower()
     unit = unit.lower().strip()
+    
     ingredient_type = classify_ingredient(name)
 
     # המרה לפי טבלת יחידות

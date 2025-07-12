@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models import InventoryItem
 from app.services import inventory_service
 
+
 inventory_bp = Blueprint("inventory", __name__, url_prefix="/api/inventory")
 
 
@@ -42,6 +43,7 @@ def get_inventory(user_id: int):
     return jsonify({"inventory": [_item_to_dict(i) for i in items]})
 
 
+
 # --------------------------------------------------------------------------- #
 #                               🔹 הוספה – POST                               #
 # --------------------------------------------------------------------------- #
@@ -73,3 +75,6 @@ def delete_item(user_id: int, item_id: int):
     if not item:
         return jsonify(message="Item not found"), 404
     return jsonify(message="Item deleted successfully"), 200
+
+
+

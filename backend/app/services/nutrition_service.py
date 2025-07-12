@@ -9,26 +9,57 @@ DETAIL_URL = "https://api.nal.usda.gov/fdc/v1/food"
 # ---------------------------------------------------------------------------- #
 #        פונקציה ראשית – מחזירה רק קלוריות/חלבון/פחמימות/שומן               #
 # ---------------------------------------------------------------------------- #
+
+
 @functools.lru_cache(maxsize=2048)
 def fetch_nutrition(raw_name: str) -> dict | None:
     name = raw_name.strip().lower()
+    print(f"🔍 fetch_nutrition called for: {name}")
 
     def get_nutrient(nutrients, name):
         for n in nutrients:
             if n.get("nutrient", {}).get("name", "").lower() == name.lower():
                 return n.get("amount")
         return None
+    
+    def get_avg_weight_from_portions(portions):
+        priority_modifiers = {"whole", "head", "piece", "medium", "unit"}
+        for p in portions:
+            unit_name = p.get("measureUnit", {}).get("name", "").lower()
+            modifier = p.get("modifier", "").lower()
+            gram_weight = p.get("gramWeight")
+
+            if not gram_weight:
+                continue
+
+            if unit_name in {"piece", "unit", "head"} or modifier in priority_modifiers:
+                return round(gram_weight)
+
+        # fallback – קח את הראשון, גם אם לא אידיאלי
+        if portions:
+            return round(portions[0].get("gramWeight", 0))
+
+        return None
 
     food = fetch_nutrition_raw(name)
     if not food:
         return None
 
+
     nutrients = food.get("foodNutrients", [])
+    portions = food.get("foodPortions", []) 
+    avg_weight = get_avg_weight_from_portions(portions) 
+    print(f"📦 Portions for {name}:", portions)
+    print("avarage",avg_weight)
+
+    
     return {
         "calories": get_nutrient(nutrients, "Energy"),
         "protein":  get_nutrient(nutrients, "Protein"),
         "carbs":    get_nutrient(nutrients, "Carbohydrate, by difference"),
-        "fat":      get_nutrient(nutrients, "Total lipid (fat)")
+        "fat":      get_nutrient(nutrients, "Total lipid (fat)"),
+        "avg_weight": avg_weight,
+
     }
 
 # ---------------------------------------------------------------------------- #
@@ -86,3 +117,8 @@ def fetch_nutrition_raw(name: str) -> dict | None:
 
     print(f"🚫 No raw data for '{name}' after {max_retries} attempts")
     return None
+
+
+def clear_nutrition_cache():
+    fetch_nutrition.cache_clear()
+    fetch_nutrition_raw.cache_clear()

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import RecommendedRecipes from "../components/dashboard/RecommendedRecipes";
 import InventoryStatus from "../components/dashboard/InventoryStatus";
 import NutritionSummary from "../components/dashboard/NutritionSummary";
-import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const [recipes, setRecipes] = useState([]);

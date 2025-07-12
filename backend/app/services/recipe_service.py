@@ -47,15 +47,20 @@ def get_recommended_recipes(
             if not item.expiration_date or item.expiration_date >= today
         ]
 
-    inventory = [item.name.lower() for item in inventory_items]
-    print("inventory_recSERV",inventory)
+    inventory = [
+        {"name": item.name.lower(), "quantity": item.quantity, "unit": item.unit}
+        for item in inventory_items
+    ]
+
 
 
     recipes, seen_titles, best_partial = [], set(), []
     attempts, max_attempts = 0, 4
 
+
     # ---------- Talk to LLM (with retries) ----------
     while len(recipes) < num_recipes and attempts < max_attempts:
+        print("📦 INVENTORY FOR GROQ:", inventory)
         result = suggest_recipes_from_groq(
             user_id=user_id,
             ingredients=inventory,
@@ -116,8 +121,9 @@ def get_recommended_recipes(
             seen_titles.add(title)
             if len(recipes) >= num_recipes:
                 break
-
         attempts += 1
+        print("attempts:))))))))\n",attempts)      
+
 
     # ---------- Fallback if nothing full ----------
     if not recipes and best_partial:

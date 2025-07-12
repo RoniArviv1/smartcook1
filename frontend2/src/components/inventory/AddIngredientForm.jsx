@@ -18,6 +18,8 @@ export default function AddIngredientForm({ onSubmit, onCancel, existingItems = 
   const [expiryRequired, setExpiryRequired] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [message, setMessage] = useState("");
+  const [category, setCategory] = useState("");
+
 
   const handleFetchUnits = async () => {
     const name = form.name.trim();
@@ -36,15 +38,20 @@ export default function AddIngredientForm({ onSubmit, onCancel, existingItems = 
 
       const units = data.units || [];
       const expiryRequiredFlag = data.expiry_required ?? true;
+      const categoryReceived = data.category || "Uncategorized";
+
 
       if (units.length === 0) {
         setIsVerified(false);
         setMessage("❌ No units found for this ingredient");
         setAllowedUnits([]);
         setExpiryRequired(true);
+        setCategory("");
+
       } else {
         setAllowedUnits(units);
         setExpiryRequired(expiryRequiredFlag);
+        setCategory(categoryReceived); // 🆕
         setIsVerified(true);
         setMessage("✔ Units loaded successfully");
       }
@@ -77,6 +84,7 @@ export default function AddIngredientForm({ onSubmit, onCancel, existingItems = 
 
     await onSubmit({
       ...form,
+      category,
       quantity: parseFloat(form.quantity),
       expiration_date: form.expiration_date || null
     });

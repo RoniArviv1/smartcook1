@@ -1,7 +1,7 @@
 # app/utils/recipe_nutrition.py
 from collections import defaultdict
 from app.models import InventoryItem
-from app.utils.unit_normalizer import normalize_single_unit
+from app.utils.unit_utils import normalize_single_unit
 
 def calc_recipe_nutrition(ingredients: list[dict]) -> dict:
     """
@@ -12,12 +12,12 @@ def calc_recipe_nutrition(ingredients: list[dict]) -> dict:
 
     for ing in ingredients:
         name = (ing.get("name") or "").strip().lower()
-        qty  = float(ing.get("quantity") or 0)          # ← quantity
+        quantity  = float(ing.get("quantity") or 0)          # ← quantity
         unit = ing.get("unit", "")
-        if not name or qty <= 0 or not unit:
+        if not name or quantity <= 0 or not unit:
             continue
 
-        norm_qty, _ = normalize_single_unit(qty, unit)
+        norm_qty, _ = normalize_single_unit(quantity, unit)
 
         row = (
             InventoryItem.query

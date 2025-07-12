@@ -1,6 +1,4 @@
 from app.services.nutrition_service import fetch_nutrition_raw
-import re
-
 
 
 # 🔹 סיווג לפי קטגוריית USDA
@@ -10,7 +8,7 @@ def classify_by_usda_category(category: dict | str) -> str:
     else:
         category = category.lower()
 
-    if any(word in category for word in ["juice", "drink", "milk", "oil", "vinegar", "syrup", "water","soups, sauces, and sravies"]):
+    if any(word in category for word in ["juice", "drink", "milk", "vinegar", "syrup", "water","soups, sauces, and sravies"]):
         return "liquid"
     if any(word in category for word in ["spice", "seasoning", "herb", "condiment","spices and herbs"]):
         return "spice"
@@ -28,13 +26,8 @@ def classify_ingredient(name: str) -> tuple[str, bool]:
     lowered = name.lower()
 
 
-    # תבלינים – לא דורשים תוקף
-    spices = {
-        "salt", "sugar", "cinnamon", "paprika", "turmeric", "cumin",
-        "oregano", "basil", "thyme", "spice", "chili", "pepper powder"
-    }
     liquids = {
-        "juice", "oil", "water", "syrup", "vinegar", "wine"
+        "milk","juice", "oil", "water", "syrup", "vinegar", "wine"
     }
     if lowered in liquids or any(liquid in lowered for liquid in liquids):
         return "liquid", True
@@ -46,7 +39,7 @@ def classify_ingredient(name: str) -> tuple[str, bool]:
         "clove", "garlic"
     }
     if lowered in no_expiry_items:
-        return "countable", False
+        return "fruit_And_Vegetable", False
 
     # מוצרי מאפה וביצים – דורשים תוקף
     baked_and_eggs = {

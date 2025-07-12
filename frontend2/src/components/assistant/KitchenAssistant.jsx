@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   ChefHat, Sparkles, Apple, CornerUpLeft,
   CheckSquare, Square, Heart, Trash,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Timer, Users
 } from "lucide-react";
 import Button from "../ui/button";
 import ChatMessage from "./ChatMessage";
@@ -574,8 +574,9 @@ export default function KitchenAssistant({
 
       {/* -------- Saved Recipes -------- */}
       {showSaved && (
-        <div className="w-full max-w-4xl mt-6 bg-white p-4 rounded-xl shadow">
-          <h2 className="text-xl font-semibold mb-3">💖 Saved Recipes</h2>
+        <div className="w-full max-w-4xl mt-6 bg-white p-6 rounded-xl shadow">
+          <h2 className="text-xl font-semibold mb-4">💖 Saved Recipes</h2>
+
           {savedRecipes.length === 0 ? (
             <p className="text-sm text-gray-500">No recipes saved yet.</p>
           ) : (
@@ -584,66 +585,77 @@ export default function KitchenAssistant({
               return (
                 <div
                   key={i}
-                  className="border rounded p-4 mb-3 bg-gray-50"
+                  className="border rounded-lg p-5 mb-5 bg-gray-50 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div
-                    className="flex justify-between items-center cursor-pointer"
-                    onClick={() => setOpenSavedIdx(open ? null : i)}
-                  >
-                    <h3 className="text-orange-600 font-medium">{r.title}</h3>
+                  {/* Header */}
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-orange-600 text-lg font-semibold">{r.title}</h3>
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={e => {
+                        onClick={(e) => {
                           e.stopPropagation();
                           setOpenSavedIdx(open ? null : i);
                         }}
                       >
-                        {open ? "Hide" : "View"}{" "}
-                        {open ? (
-                          <ChevronUp size={14} />
-                        ) : (
-                          <ChevronDown size={14} />
-                        )}
+                        {open ? "Hide" : "View"} {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       </Button>
                       <button
-                        onClick={e => {
+                        onClick={(e) => {
                           e.stopPropagation();
                           deleteRecipe(r.title);
                         }}
                         className="text-gray-500 hover:text-red-600"
+                        title="Delete"
                       >
                         <Trash size={16} />
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">{r.description}</p>
+
+                  {/* Description */}
+                  <p className="text-sm text-gray-600 mt-1">{r.description}</p>
+
+                  {/* Expanded content */}
                   {open && (
-                    <div className="mt-3 space-y-3 text-sm">
-                      <div className="flex flex-wrap gap-2">
-                        <span className="badge">{r.difficulty}</span>
-                        <span className="badge">Prep {r.prep_minutes} m</span>
-                        <span className="badge">Cook {r.cook_minutes} m</span>
+                    <div className="mt-4 space-y-4 text-sm text-gray-800">
+                      {/* Meta details */}
+                      <div className="flex flex-wrap gap-4 text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <ChefHat size={16} /> <span>{r.difficulty}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Timer size={16} /> <span>Prep: {r.prep_minutes} min</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Timer size={16} /> <span>Cook: {r.cook_minutes} min</span>
+                        </div>
                         {r.servings && (
-                          <span className="badge">Serves {r.servings}</span>
+                          <div className="flex items-center gap-1">
+                            <Users size={16} /> <span>Serves: {r.servings}</span>
+                          </div>
                         )}
                       </div>
+
+                      {/* Ingredients */}
                       <div>
-                        <strong>Ingredients:</strong>
-                        <ul className="list-disc ml-5">
+                        <h4 className="font-semibold mb-1">🧂 Ingredients:</h4>
+                        <ul className="list-disc list-inside pl-2">
                           {r.ingredients.map((ing, idx) => (
                             <li key={idx}>
-                              {ing.qty} {ing.unit} {ing.name}
+                              <span className="font-medium">{ing.name}</span>: {ing.quantity} {ing.unit}
                             </li>
                           ))}
                         </ul>
                       </div>
+
+                      {/* Instructions */}
                       <div>
-                        <strong>Instructions:</strong>
-                        <ol className="list-decimal ml-5 space-y-1">
-                          {r.instructions.map((s, idx) => (
-                            <li key={idx}>{s}</li>
+                        <h4 className="font-semibold mb-1">👨‍🍳 Instructions:</h4>
+                        <ol className="list-decimal list-inside space-y-1 pl-2">
+                          {r.instructions.map((step, idx) => (
+                            <li key={idx}>{step}</li>
                           ))}
                         </ol>
                       </div>
@@ -655,6 +667,7 @@ export default function KitchenAssistant({
           )}
         </div>
       )}
+
 
       {/* once-per-file badge styling */}
       <style jsx="true">{`

@@ -8,6 +8,8 @@ from openai.error import OpenAIError
 from app.utils.unit_normalizer import normalize_ingredient_units
 from app.services.spice_service import get_spices_for_user
 
+
+
 # 🌟 דירוגים
 from app.services.rating_learning import summarize_user_ratings_for_prompt
 
@@ -111,7 +113,6 @@ def suggest_recipes_from_groq(
     prev_recipe: dict[str, Any] | None = None,
     num_recipes: int = 3
 ) -> dict[str, Any]:
-
     dietary = [d.strip().lower() for d in user_prefs.get("dietary", [])]
     allergies = user_prefs.get("allergies", [])
     safe_inv = _filter_inventory(ingredients, dietary)
@@ -129,8 +130,8 @@ def suggest_recipes_from_groq(
     restriction_note = _build_restriction_note(dietary)
     rating_summary = summarize_user_ratings_for_prompt(user_id)
 
-    user_spices = get_spices_for_user(user_id)  # מחזיר רשימת שמות
-    spices_txt  = ", ".join(user_spices) if user_spices else "no specific spices available"
+    user_spices = get_spices_for_user(user_id)
+    spices_txt = ", ".join(user_spices) if user_spices else "no specific spices available"
     print(spices_txt)
 
     SYSTEM_LINE = (
@@ -142,7 +143,6 @@ def suggest_recipes_from_groq(
     last_error = ""
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        # 🆕 בקשת רשימה של מתכונים מגוונים
         base_prompt = (
             f"{SYSTEM_LINE}\n\n"
             "You are a helpful cooking assistant.\n"
@@ -192,7 +192,7 @@ def suggest_recipes_from_groq(
         )
 
         try:
-            print("promt",prompt)
+            
             res = openai.ChatCompletion.create(
                 model="llama3-70b-8192",
                 messages=[{"role": "user", "content": prompt}],
@@ -211,7 +211,6 @@ def suggest_recipes_from_groq(
 
         parsed = _extract_json(raw_content)
 
-
         if parsed is None or "recipes" not in parsed:
             last_error = "Invalid or missing 'recipes' in JSON"
             if attempt < MAX_ATTEMPTS:
@@ -219,20 +218,14 @@ def suggest_recipes_from_groq(
                 continue
             return {"error": last_error, "recipes": []}
 
-        # 🆕 וידוא שכל מתכון תקין
         valid_recipes = []
         for r in parsed["recipes"]:
             if not isinstance(r, dict) or "title" not in r:
                 continue
-            # if len(r.get("instructions", [])) < 6:
-            #     continue
-            # for ing in r.get("ingredients", []):
-            #     if not isinstance(ing.get("qty"), (int, float)):
-            #         ing["qty"], ing["unit"] = 100, "g"
             valid_recipes.append(r)
 
         if valid_recipes:
-            normalized = normalize_ingredient_units(valid_recipes)
+            normalized = normalize_ingredient_units(valid_recipes, user_id)
             return {"user_id": user_id, "recipes": normalized}
 
         last_error = "No valid recipes returned"

@@ -65,6 +65,7 @@ class InventoryItem(db.Model):
     protein         = db.Column(db.Float)   # g
     carbs           = db.Column(db.Float)   # g
     fat             = db.Column(db.Float)   # g
+    avg_weight = db.Column(db.Float)
 
     # FK → users.id
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

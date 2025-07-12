@@ -47,7 +47,6 @@ def get_saved(user_id):
 @recipe_bp.route('/saved/<int:user_id>', methods=['POST'])
 def save(user_id):
     data = request.get_json() or {}
-    print("data",data)
     save_recipe(user_id, data)
     return jsonify({"message": "Recipe saved."}), 201
 
