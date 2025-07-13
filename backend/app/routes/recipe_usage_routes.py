@@ -12,7 +12,7 @@ def use_recipe():
     recipe_hash = data.get("recipe_hash")
     ingredients = data.get("ingredients", [])
     nutrition = data.get("nutrition")  # ← קבלת ערכים תזונתיים מהקליינט
-    print("✅ Got recipe_hash:", recipe_hash, nutrition)
+  
 
 
     result = update_inventory_after_recipe(user_id, ingredients)

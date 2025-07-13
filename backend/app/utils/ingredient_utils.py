@@ -79,7 +79,7 @@ def get_allowed_units(name: str) -> dict:
         "countable": ["pieces","grams", "kg"],
         "spice": ["grams"],
         "fruit_And_Vegetable": ["pieces"],
-        "Dairy": ["ml", "l","grams", "kg","pieces"]
+        "Dairy": ["grams", "kg"]
 
     }
 

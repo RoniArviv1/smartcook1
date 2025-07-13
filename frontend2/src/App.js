@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
-import { useLocation, useNavigate } from "react-router-dom";
+
 
 import ScanProduct from "./pages/ScanProduct";
 import InventoryAddPage from "./components/inventory/InventoryAddPage";
-import AddIngredientForm from "./components/inventory/AddIngredientForm";
+
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";

@@ -1,15 +1,20 @@
-// src/components/assistant/KitchenAssistant.jsx
+// ייבוא של React וכלים נלווים לניהול state, אפקטים ו־ref
 import React, { useState, useRef, useEffect } from "react";
+
+// ייבוא אייקונים מ־lucide-react (אייקונים SVG מודרניים)
 import {
   ChefHat, Sparkles, Apple, CornerUpLeft,
   CheckSquare, Square, Heart, Trash,
   ChevronDown, ChevronUp, Timer, Users
 } from "lucide-react";
+
+// קומפוננטות פנימיות
 import Button from "../ui/button";
 import ChatMessage from "./ChatMessage";
 import SuggestedRecipes from "./SuggestedRecipes";
 import { Link } from "react-router-dom";
 
+// הגדרות עבור סוגי אפשרויות
 const MULTI_OPTS   = ["Lower calories", "Faster to make"];
 const INSTANT_OPTS = ["Show me another recipe", "Surprise me"];
 const FLOW_OPTS    = [
@@ -18,6 +23,7 @@ const FLOW_OPTS    = [
   "Choose a cuisine style"
 ];
 
+// מיפוי בין כפתור לבקשה מלאה
 const SINGLE_MAP = {
   "Show me another recipe":
     "Please suggest a completely different recipe based on my preferences.",
@@ -26,22 +32,25 @@ const SINGLE_MAP = {
 };
 
 export default function KitchenAssistant({
-  inventory,
-  userName,
-  userId,
-  onSendMessage,
-  useExpiring,
-  setUseExpiring
+  inventory,          // המלאי של המשתמש
+  userName,           // שם המשתמש
+  userId,             // מזהה המשתמש
+  onSendMessage,      // פונקציה לשליחת הודעה לשרת
+  useExpiring,        // האם להשתמש במוצרים שתוקפם קרוב
+  setUseExpiring      // סטייט שמנהל את useExpiring
 }) {
+  // מצב ההודעות בצ'אט
   const [messages, setMessages] = useState([
     {
       type: "assistant",
       content: `👋 Hello${userName ? ` ${userName}` : ""}, I'm your SmartCook Assistant.\nHow can I inspire your next meal today?`
     }
   ]);
-  const [lastRecipeIndex, setLastRecipeIndex] = useState(null);
-  const messagesEndRef = useRef(null);
+  
+  const [lastRecipeIndex, setLastRecipeIndex] = useState(null); // אינדקס של ההודעה האחרונה עם מתכון
+  const messagesEndRef = useRef(null); // לצורך גלילה אוטומטית לתחתית הצ'אט
 
+  // מצבים זמניים לשינויים
   const [pendingOpts, setPendingOpts] = useState([]);
   const [spiceState,  setSpiceState]  = useState("none");
 
@@ -52,13 +61,12 @@ export default function KitchenAssistant({
   const [choosingCuisine,   setChoosingCuisine]   = useState(false);
   const [selectedCuisine, setSelectedCuisine] = useState(null);
 
+  const [savedRecipes, setSavedRecipes] = useState([]);  // מתכונים שנשמרו
+  const [showSaved,    setShowSaved]    = useState(false); // האם להציג את השמורים
+  const [openSavedIdx, setOpenSavedIdx] = useState(null);  // איזה שמור פתוח כעת
+  const [mealType, setMealType] = useState(null); // סוג הארוחה (בוקר/צהריים/ערב)
 
-
-  const [savedRecipes, setSavedRecipes] = useState([]);
-  const [showSaved,    setShowSaved]    = useState(false);
-  const [openSavedIdx, setOpenSavedIdx] = useState(null);
-  const [mealType, setMealType] = useState(null);
-
+  // שליפת מתכונים שמורים מהשרת
   useEffect(() => {
     fetch(`http://localhost:5000/api/recipes/saved/${userId}`)
       .then(res => res.json())
@@ -66,14 +74,17 @@ export default function KitchenAssistant({
       .catch(console.error);
   }, [userId]);
 
+  // גלילה אוטומטית לתחתית הצ'אט
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // שמירת מתכונים בלוקאל סטורג'
   useEffect(() => {
     localStorage.setItem("smartcook_saved", JSON.stringify(savedRecipes));
   }, [savedRecipes]);
 
+  // פונקציה לבניית תיאור טקסטואלי של ההתאמות
   const buildMods = () => {
     const parts = [];
     if (pendingOpts.length)
@@ -91,12 +102,14 @@ export default function KitchenAssistant({
     return parts.join(" and ");
   };
 
+  // איפוס כל ההתאמות
   const resetMods = () => {
     setPendingOpts([]);
     setSpiceState("none");
     setMealType(null);
   };
 
+  // שליחת הודעה לעוזר
   const sendUserMessage = async (msg) => {
     if (!inventory || inventory.length === 0) {
       setMessages((prev) => [
@@ -123,20 +136,21 @@ export default function KitchenAssistant({
     if (res.recipes?.length) setLastRecipeIndex(messages.length + 1);
   };
 
+  // החלת ההתאמות שנבחרו
   const applyPending = async () => {
-    const mods = buildMods(); // ❗ שימוש בפונקציה המרכזית
-
+    const mods = buildMods();
     if (!mods) return;
 
-    if (
+    const isInstant =
       pendingOpts.length === 1 &&
       spiceState === "none" &&
       excludedItems.length === 0 &&
       includeItems.length === 0 &&
-      !mealType && // חשוב: לא לאפשר instant אם יש mealType
+      !mealType &&
       !selectedCuisine &&
-      INSTANT_OPTS.includes(pendingOpts[0])
-    ) {
+      INSTANT_OPTS.includes(pendingOpts[0]);
+
+    if (isInstant) {
       await sendUserMessage(SINGLE_MAP[pendingOpts[0]]);
     } else {
       await sendUserMessage(`Please make the last recipe ${mods}.`);
@@ -148,13 +162,14 @@ export default function KitchenAssistant({
     setSelectedCuisine(null);
   };
 
-
+  // ביטול ההתאמות (Cancel)
   const cancelPending = () => {
     resetMods();
     setExcludedItems([]);
     setIncludeItems([]);
   };
 
+  // אישור הוצאת מרכיבים
   const submitExclude = async () => {
     if (!excludedItems.length) return;
 
@@ -184,32 +199,31 @@ export default function KitchenAssistant({
     setAwaitingExclusion(false);
   };
 
+  // אישור הוספת מרכיבים חובה
   const submitInclude = async () => {
     if (!includeItems.length) return;
     setAwaitingInclude(false);
   };
 
-
+  // אישור סגנון מטבח
   const submitCuisine = async () => {
     if (!selectedCuisine) return;
     setChoosingCuisine(false);
   };
 
-
-
-
-
+  // הוספה/הסרה של אפשרות לביצוע
   const togglePending = (opt) =>
     setPendingOpts(prev =>
       prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]
     );
 
+  // הוספה/הסרה של מרכיב מרשימה
   const toggleItem = (name, list, setter) =>
     setter(list.includes(name) ? list.filter(i => i !== name) : [...list, name]);
 
+  // שמירת מתכון בשרת
   const saveRecipe = async (r) => {
     try {
-      console.log("📦 saving recipe:", r);
       const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -225,6 +239,7 @@ export default function KitchenAssistant({
     }
   };
 
+  // מחיקת מתכון מהשרת ומהסטייט
   const deleteRecipe = async (title) => {
     try {
       const res = await fetch(`http://localhost:5000/api/recipes/saved/${userId}`, {

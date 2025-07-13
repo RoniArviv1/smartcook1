@@ -8,7 +8,6 @@ assistant_bp = Blueprint("assistant", __name__)
 @assistant_bp.route("/assistant", methods=["POST"])
 def handle_assistant():
     data         = request.get_json(force=True)
-    print("data11",data)
     user_id      = data.get("user_id")
     user_message = data.get("message", "What can I cook today?")
     user_prefs   = data.get("user_prefs", {})

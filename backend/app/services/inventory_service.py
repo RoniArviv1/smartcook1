@@ -13,7 +13,7 @@ from app.models import InventoryItem
 from app.utils.unit_utils import normalize_single_unit
 from app.services.nutrition_service import fetch_nutrition
 from app.services.nutrition_service import clear_nutrition_cache
-
+from app.utils.ingredient_utils import classify_ingredient
 
 # --------------------------------------------------------------------------- #
 #                     קונפיגורציית יחידות שקילות (לדוגמה)                    #
@@ -42,7 +42,7 @@ def get_user_inventory(user_id: int) -> List[InventoryItem]:
     return InventoryItem.query.filter_by(user_id=user_id).all()
 
 # ---------- הוספה / מיזוג ----------
-from app.utils.ingredient_utils import classify_ingredient
+
 
 def add_inventory_item(user_id: int, data: dict) -> InventoryItem:
     print("Received data:", data)
