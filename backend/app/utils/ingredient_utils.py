@@ -14,7 +14,7 @@ def classify_by_usda_category(category: dict | str) -> str:
         return "spice"
     if any(word in category for word in ["fruit", "vegetable"]):
         return "fruit_And_Vegetable"
-    if any(word in category for word in ["baked products","snacks",'sweets']):
+    if any(word in category for word in ["baked products",'sweets']):
         return "countable"
     if any(word in category for word in ["dairy and egg product"]):
         return "Dairy"
@@ -45,8 +45,9 @@ def classify_ingredient(name: str) -> tuple[str, bool]:
     baked_and_eggs = {
         "bread", "egg", "roll", "bun", "pita", "bagel"
     }
-    if lowered in baked_and_eggs:
+    if "egg" in lowered:
         return "countable", True
+
 
     # ברירת מחדל – מוצק שדורש תוקף
     return "solid", True
@@ -87,13 +88,19 @@ def get_allowed_units(name: str) -> dict:
     classification, expiry_required = classify_ingredient(lowered)
 
     # דיוק נוסף בעזרת USDA אם הסיווג הוא "solid"
+    food = None  # ✅ תמיד נגדיר food מראש
+
+# דיוק נוסף בעזרת USDA אם הסיווג הוא "solid"
     if classification == "solid":
         food = fetch_nutrition_raw(lowered)
-        print(f"USDA category for '{name}': {food.get('foodCategory')}")
-        if food and "foodCategory" in food:
+
+        if food and food.get("foodCategory"):
+            print(f"USDA category for '{name}': {food.get('foodCategory')}")
             classification = classify_by_usda_category(food["foodCategory"])
             expiry_required = is_expiry_required_by_category(classification)
-            # דרישת תוקף תיקבע לפי שם המקורי – לא לפי הסיווג בלבד
+        else:
+            print(f"USDA lookup failed for '{name}'. Using fallback classification='solid'.")
+
       
             
 

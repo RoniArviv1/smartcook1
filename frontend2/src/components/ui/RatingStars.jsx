@@ -1,4 +1,5 @@
 // src/components/ui/RatingStars.jsx
+import { API_BASE } from "../../utils/api";
 import React, { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
@@ -17,7 +18,7 @@ export default function RatingStars({ recipe, userId, onRated }) {
   /* --------------- fetch average once ---------------- */
   useEffect(() => {
     if (!recipeHash) return;
-    fetch(`http://localhost:5000/api/recipes/rating/${recipeHash}`)
+    fetch(`${API_BASE}/api/recipes/rating/${recipeHash}`)
       .then((res) => res.json())
       .then((d) => {
         setAverage(Number(d.average_rating) || 0);
@@ -32,7 +33,7 @@ export default function RatingStars({ recipe, userId, onRated }) {
     setSelected(value);
 
     try {
-      const res = await fetch("http://localhost:5000/api/recipes/rate", {
+      const res = await fetch(`${API_BASE}/api/recipes/rate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

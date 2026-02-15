@@ -1,4 +1,5 @@
 // src/pages/Preferences.jsx
+import { API_BASE } from "../utils/api";
 import React, { useEffect, useState } from "react";
 import PreferencesForm from "../components/profile/PreferencesForm";
 
@@ -16,7 +17,7 @@ export default function Preferences() {
   const loadPreferences = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/preferences/${userId}`);
+      const res = await fetch(`${API_BASE}/api/preferences/${userId}`);
       if (!res.ok) throw new Error(`GET preferences failed: ${res.status}`);
       const data = await res.json();
       setPreferences(data);
@@ -29,7 +30,7 @@ export default function Preferences() {
 
   const handleSubmit = async (formData) => {
     try {
-      const url = `http://localhost:5000/api/preferences/${userId}`;
+      const url = `${API_BASE}/api/preferences/${userId}`;
       const res = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

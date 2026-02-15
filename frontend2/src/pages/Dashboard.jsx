@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/api";
 import React, { useEffect, useState } from "react";
 import RecommendedRecipes from "../components/dashboard/RecommendedRecipes";
 import InventoryStatus from "../components/dashboard/InventoryStatus";
@@ -21,8 +22,8 @@ export default function Dashboard() {
 
     try {
       const [prefsRes, inventoryRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/preferences/${userId}`),
-        fetch(`http://localhost:5000/api/inventory/${userId}`)
+        fetch(`${API_BASE}/api/preferences/${userId}`),
+        fetch(`${API_BASE}/api/inventory/${userId}`)
       ]);
 
       if (![prefsRes, inventoryRes].every(r => r.ok)) {
@@ -46,7 +47,7 @@ export default function Dashboard() {
       setInventory(cleanedInventory);
 
       // ✨ קריאת מתכונים עם userPrefs
-      const recipesRes = await fetch(`http://localhost:5000/api/recipes/recommended`, {
+      const recipesRes = await fetch(`${API_BASE}/api/recipes/recommended`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -72,7 +73,7 @@ export default function Dashboard() {
 
   const refreshRecommendations = async () => {
   try {
-    const res = await fetch(`http://localhost:5000/api/assistant/refresh/${userId}`, {
+    const res = await fetch(`${API_BASE}/api/assistant/refresh/${userId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

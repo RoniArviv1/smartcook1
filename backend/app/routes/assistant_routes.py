@@ -11,25 +11,33 @@ def handle_assistant():
     user_id      = data.get("user_id")
     user_message = data.get("message", "What can I cook today?")
     user_prefs   = data.get("user_prefs", {})
-    num_recipes  = int(data.get("num_recipes", 1))
+    num_recipes = min(int(data.get("num_recipes", 1)), 1)
     use_expiring = data.get("use_expiring_soon", False)
     prev_recipe   = data.get("prev_recipe")
     
 
     try:
         recipes = get_recommended_recipes(
-            user_id      = user_id,
-            user_message = user_message,
-            user_prefs   = user_prefs,
-            num_recipes  = num_recipes,
-            save_to_db   = False,
-            use_cache    = False,  
-            use_expiring_soon= use_expiring,
-            prev_recipe       = prev_recipe
+            user_id=user_id,
+            user_message=user_message,
+            user_prefs=user_prefs,
+            num_recipes=num_recipes,
+            save_to_db=False,
+            use_cache=False,
+            use_expiring_soon=use_expiring,
+            prev_recipe=prev_recipe,
         )
+                
+        print("🧪 get_recommended_recipes returned:", recipes, "TYPE:", type(recipes))
+
         if not recipes:
             return jsonify({"recipes": [{"message": "No recipes generated."}]}), 200
         print("recipes11",recipes)
+        print("🧪 RECIPES TYPE:", type(recipes))
+        print("🧪 RECIPES LEN:", len(recipes) if isinstance(recipes, list) else "not a list")
+        print("🧪 FIRST RECIPE KEYS:", list(recipes[0].keys()) if isinstance(recipes, list) and recipes else "no recipes")
+        print("🧪 FIRST RECIPE SAMPLE:", recipes[0] if isinstance(recipes, list) and recipes else "no recipes")
+
         return jsonify({"user_id": user_id, "recipes": recipes}), 200
     except Exception as exc:
         print("❌ SERVER ERROR:", exc)
@@ -60,5 +68,5 @@ def refresh_recommendations(user_id):
         num_recipes  = 3,
         save_to_db   = False,
     )
-
+    
     return jsonify({"recipes": new_recipes}), 200

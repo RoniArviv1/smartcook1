@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/api";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AddIngredientForm from "./AddIngredientForm";
@@ -13,7 +14,7 @@ export default function InventoryAddPage() {
     const userId = storedUser.user_id || storedUser.id || 1;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/inventory/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/inventory/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...ingredient, barcode: barcodeFromScan, user_id: userId })

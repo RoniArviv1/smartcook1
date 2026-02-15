@@ -1,3 +1,4 @@
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import React, { useState } from "react";
 import CameraScanner from "./CameraScanner";
 import UploadScanner from "./UploadScanner";
@@ -11,7 +12,6 @@ export default function BarcodeScannerWrapper({ onResult }) {
   const [detected, setDetected] = useState(null);
 
   const handleDetected = (barcode) => {
-    console.log("🚀 ברקוד שהתקבל:", barcode);
     setDetected(barcode);
     if (onResult) onResult(barcode);
   };
@@ -24,19 +24,19 @@ export default function BarcodeScannerWrapper({ onResult }) {
           className={`px-4 py-2 rounded ${mode === "camera" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
           onClick={() => setMode("camera")}
         >
-          📷 מצלמה
+          📷 Camera
         </button>
         <button
           className={`px-4 py-2 rounded ${mode === "upload" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
           onClick={() => setMode("upload")}
         >
-          🖼 העלאת תמונה
+          🖼 Upload a photo
         </button>
         <button
           className={`px-4 py-2 rounded ${mode === "manual" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
           onClick={() => setMode("manual")}
         >
-          ⌨️ הקלדה ידנית
+          ⌨️ Manual typing
         </button>
       </div>
 
@@ -50,7 +50,7 @@ export default function BarcodeScannerWrapper({ onResult }) {
       {/* תוצאה אחרונה שנקלטה */}
       {detected && (
         <div className="text-center text-green-600 font-bold mt-4">
-          ✅ ברקוד שנקלט: {detected}
+          ✅ Barcode captured: {detected}
         </div>
       )}
     </div>

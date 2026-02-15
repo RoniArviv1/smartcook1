@@ -1,7 +1,8 @@
+import { API_BASE } from "../../utils/api";
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-export default function AddIngredientForm({ onSubmit, onCancel, existingItems = [] }) {
+export default function AddIngredientForm({ onSubmit, onCancel = [] }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { name = "", barcode = "" } = location.state || {};
@@ -31,7 +32,7 @@ export default function AddIngredientForm({ onSubmit, onCancel, existingItems = 
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/ingredient/units?name=${encodeURIComponent(name)}`);
+      const res = await fetch(`${API_BASE}/api/ingredient/units?name=${encodeURIComponent(name)}`);
       if (!res.ok) throw new Error("Failed to fetch allowed units");
       const data = await res.json();
       console.log("📦 classification received:", data.category);

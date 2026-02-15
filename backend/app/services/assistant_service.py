@@ -1,22 +1,21 @@
-from __future__ import annotations
-import json, os, re, time, random
-from typing import Any, List
-from typing import Union, Dict
-from dotenv import load_dotenv
-import openai
-from openai.error import OpenAIError
-from app.utils.unit_normalizer import normalize_ingredient_units
-from app.services.spice_service import get_spices_for_user
+from __future__ import annotations  # תמיכה באנוטציות טיפוסים גם בגרסאות ישנות יותר של פייתון
+import json, os, re, time, random  # יבוא של מודולים שימושיים
+from typing import Any, List, Union, Dict  # טיפוסים להשלמת Type Hints
+from dotenv import load_dotenv  # מאפשר קריאה של משתני סביבה מקובץ .env
+import openai  # ספריית OpenAI לשליחת בקשות למודל
+from openai.error import OpenAIError  # מחלקת שגיאה מבית OpenAI
 
+# יבוא פונקציות עזר פנימיות מהפרויקט
+from app.utils.unit_normalizer import normalize_ingredient_units  # מנרמל יחידות מדידה לפי סוג רכיב
+from app.services.spice_service import get_spices_for_user  # מביא תבלינים אישיים לפי user_id
+from app.services.rating_learning import summarize_user_ratings_for_prompt  # מחלץ סיכום דירוגים של המשתמש
 
-
-# 🌟 דירוגים
-from app.services.rating_learning import summarize_user_ratings_for_prompt
-
+# קריאת משתני סביבה מהקובץ .env
 load_dotenv()
-openai.api_key = os.getenv("GROQ_API_KEY")
-openai.api_base = "https://api.groq.com/openai/v1"
+openai.api_key = os.getenv("GROQ_API_KEY")  # מפתח API אישי ל-Groq
+openai.api_base = "https://api.groq.com/openai/v1"  # כתובת בסיס לבקשות אל Groq
 
+# מילון רכיבים אסורים לפי מגבלות תזונה נפוצות
 RESTRICTED = {
     "vegetarian": {"beef", "pork", "chicken", "turkey", "fish", "shrimp", "lamb", "bacon"},
     "vegan": {
@@ -29,6 +28,7 @@ RESTRICTED = {
     },
 }
 
+# פונקציה פנימית – מחזירה מחרוזת JSON תקנית מאוזנת מתוך טקסט ארוך
 def _balanced_json_snippet(text: str) -> str | None:
     start = text.find("{")
     if start == -1:
@@ -43,6 +43,7 @@ def _balanced_json_snippet(text: str) -> str | None:
                 return text[start: i + 1]
     return None
 
+# מנסה לפרסר JSON מתוך טקסט שיכול להיות מעוצב גם כ־markdown
 def _extract_json(text: str) -> dict[str, Any] | None:
     for candidate in (
         text,
@@ -60,9 +61,8 @@ def _extract_json(text: str) -> dict[str, Any] | None:
             continue
     return None
 
+# סינון רכיבים שנוגדים את מגבלות התזונה
 def _filter_inventory(inv: List[Any], dietary: List[str]) -> List[Any]:
-    """מחזיר רק מצרכים שמותרים מבחינת הגבלות תזונתיות.
-       תומך הן ברשימת מחרוזות והן ברשימת מילונים {name, qty, unit}."""
     banned = set()
     for d in dietary:
         banned |= RESTRICTED.get(d.lower(), set())
@@ -72,7 +72,7 @@ def _filter_inventory(inv: List[Any], dietary: List[str]) -> List[Any]:
 
     return [item for item in inv if _get_name(item) not in banned]
 
-
+# בונה הערה למודל לגבי מגבלות התזונה
 def _build_restriction_note(dietary: List[str]) -> str:
     notes = []
     dset = {d.lower() for d in dietary}
@@ -92,19 +92,20 @@ def _build_restriction_note(dietary: List[str]) -> str:
         notes.append("IMPORTANT: Paleo – no grains, legumes or processed sugar; focus on meat, fish, vegetables, fruit, nuts.")
     return " ".join(notes)
 
+# מחזיר תיאור טקסטואלי של רכיב (כולל יחידה וכמות אם קיימים)
 def _ing_to_str(item: Any) -> str:
     if isinstance(item, str):
         return item
     name = item.get("name", "")
-    quantity  = item.get("quantity")
+    quantity = item.get("quantity")
     unit = item.get("unit")
     return f"{quantity} {unit} {name}" if quantity and unit else name
 
-
-
+# מספר מקסימלי של ניסיונות קריאה למודל
 MAX_ATTEMPTS = 8
-RETRY_DELAY = (0.6, 1.4)
+RETRY_DELAY = (0.6, 1.4)  # השהיה רנדומלית בין ניסיונות
 
+# פונקציה עיקרית: יוצרת בקשת מתכונים מהמודל Groq
 def suggest_recipes_from_groq(
     user_id: int,
     ingredients: List[Union[str, Dict[str, Any]]],
@@ -112,37 +113,52 @@ def suggest_recipes_from_groq(
     user_prefs: dict[str, Any],
     prev_recipe: dict[str, Any] | None = None,
     num_recipes: int = 3
+    
 ) -> dict[str, Any]:
+    user_prefs = user_prefs or {}
+
+    # חילוץ העדפות תזונתיות ואלרגיות
     dietary = [d.strip().lower() for d in user_prefs.get("dietary", [])]
     allergies = user_prefs.get("allergies", [])
+
+    # סינון מלאי חומרים שלא מתאימים לדיאטה
     safe_inv = _filter_inventory(ingredients, dietary)
 
     if not safe_inv:
         return {"error": "No safe ingredients available.", "recipes": []}
 
+    # טקסט מגבלות
     pref_txt = "; ".join(filter(None, [
         f"dietary restrictions: {', '.join(dietary)}" if dietary else "",
         f"allergies: {', '.join(allergies)}" if allergies else "",
     ])) or "no special preferences"
 
+    # המרת רשימת רכיבים למחרוזת
     ing_txt = ", ".join(_ing_to_str(i) for i in safe_inv)
-    print("ing_txt",ing_txt)
+
+    # הערות למודל
     restriction_note = _build_restriction_note(dietary)
+
+    # סיכום דירוגים קודמים
     rating_summary = summarize_user_ratings_for_prompt(user_id)
 
+    # תבלינים מועדפים
     user_spices = get_spices_for_user(user_id)
     spices_txt = ", ".join(user_spices) if user_spices else "no specific spices available"
-    print(spices_txt)
 
+    # הוראה למודל להחזיר JSON בלבד, ללא markdown
     SYSTEM_LINE = (
-        "SYSTEM: You must reply with ONE valid JSON object only. "
-        "Do NOT wrap it in markdown. If you cannot comply, reply with an empty object {}."
-    )
+        "SYSTEM: You are a recipe API. Output ONLY valid JSON. "
+        "Do not include any conversational text, preamble, or markdown formatting like ```json."
+)
 
+    # קביעת רמת יצירתיות לפי הטקסט
     temperature = 0.7 if any(w in user_message.lower() for w in ["surprise", "different"]) else 0.4
     last_error = ""
 
+    # לולאת ניסיונות בקשת מתכון
     for attempt in range(1, MAX_ATTEMPTS + 1):
+        # בניית פרומפט מפורט
         base_prompt = (
             f"{SYSTEM_LINE}\n\n"
             "You are a helpful cooking assistant.\n"
@@ -153,7 +169,8 @@ def suggest_recipes_from_groq(
             f"{restriction_note}\n"
             f"{rating_summary}\n\n"
             "IMPORTANT:\n"
-            "- Use ONLY ingredients from the list above.\n"
+            "- You may assume the user has basic pantry items: Water, Oil, Salt, Pepper.\n" 
+            "- Try to use MAINLY ingredients from the list above, but you can add basic pantry items if needed.\n"
             "- Use ONLY the following units: grams, kg, ml, l, pieces.\n"
             "- DO NOT use cups, tablespoons, teaspoons or any imperial/volume-based units.\n"
             "- Use only allowed units per ingredient type: "
@@ -164,8 +181,7 @@ def suggest_recipes_from_groq(
             "    - Salt and intense flavorings: very small amounts only (1–5 grams)\n"
             f"- You MUST return exactly {num_recipes} clearly different recipes using only the listed ingredients.\n"
             "- Recipes must not repeat title or main ingredients.\n"
-            "- Output JSON format as shown below:\n"
-            "{\n'recipes': [...]}  # etc\n"
+            "- Each recipe must include AT LEAST 5 instruction steps.\n"
             "- Return a JSON object with this schema:\n"
             "{\n"
             '  "recipes": [\n'
@@ -184,23 +200,34 @@ def suggest_recipes_from_groq(
             "}"
         )
 
+        # התאמה אם יש מתכון קודם
         prompt = base_prompt if not prev_recipe else (
             base_prompt.replace(
                 "User message:",
                 f"User previously received this recipe: {prev_recipe.get('title', 'Unnamed')}\n\nUser request:"
             )
         )
-
+        MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        # שליחת בקשה למודל Groq
         try:
-            
             res = openai.ChatCompletion.create(
-                model="llama3-70b-8192",
+                model=MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
-                max_tokens=1100,
+                max_tokens=1200,
                 response_format={"type": "json_object"},
             )
             raw_content = res["choices"][0]["message"]["content"]
+            print("🧠 GROQ RAW (first 500):", raw_content[:500])
+
+
+        
+            parsed = _extract_json(raw_content)
+            print("🧠 PARSED KEYS:", list(parsed.keys()) if parsed else None)
+            if parsed and "recipes" in parsed:
+                    print("🧠 RECIPES COUNT:", len(parsed["recipes"]))
+
+
 
         except OpenAIError as e:
             last_error = f"Groq API error ({e})"
@@ -209,8 +236,8 @@ def suggest_recipes_from_groq(
                 continue
             return {"error": last_error, "recipes": []}
 
+        # חילוץ JSON מהתגובה
         parsed = _extract_json(raw_content)
-
         if parsed is None or "recipes" not in parsed:
             last_error = "Invalid or missing 'recipes' in JSON"
             if attempt < MAX_ATTEMPTS:
@@ -218,20 +245,27 @@ def suggest_recipes_from_groq(
                 continue
             return {"error": last_error, "recipes": []}
 
+        # סינון מתכונים תקפים בלבד
         valid_recipes = []
         for r in parsed["recipes"]:
             if not isinstance(r, dict) or "title" not in r:
                 continue
             valid_recipes.append(r)
 
+        # אם יש מתכונים תקפים, מנרמל יחידות ומחזיר
         if valid_recipes:
             normalized = normalize_ingredient_units(valid_recipes, user_id)
-            return {"user_id": user_id, "recipes": normalized}
+            return {"recipes": normalized}
 
+
+
+        # אם אין, ממשיך לנסות
         last_error = "No valid recipes returned"
         if attempt < MAX_ATTEMPTS:
             time.sleep(random.uniform(*RETRY_DELAY))
             continue
 
-    return {"error": f"Groq failed after {MAX_ATTEMPTS} attempts: {last_error}", "recipes": []}
+    # אם כל הניסיונות כשלו – מחזיר שגיאה
+    return {"error": last_error, "recipes": []}
+  # ותעיפי החוצה "error" או תזרקי Exception
 

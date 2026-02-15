@@ -1,4 +1,5 @@
 // src/components/recipes/RecipeCard.jsx
+import { API_BASE } from "../../utils/api";
 import React, { useEffect, useState } from "react";
 import {
   Timer,
@@ -49,7 +50,7 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
   /* ---------------- load average rating --------------- */
   const refreshRating = () => {
     if (!recipe_hash) return;
-    fetch(`http://localhost:5000/api/recipes/rating/${recipe_hash}`)
+    fetch(`${API_BASE}/api/recipes/rating/${recipe_hash}`)
       .then((res) => res.json())
       .then((data) => {
         const avg = Number(data.average_rating);
@@ -68,7 +69,7 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
     try {
       console.log("🔍 recipe being saved:", recipe);
       const res = await fetch(
-        `http://localhost:5000/api/recipes/saved/${userId}`,
+        `${API_BASE}/api/recipes/saved/${userId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -88,14 +89,21 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
       return;
     }
 
-    const formatted = ingredients.map((ing) => ({
-      name: ing.name,
-      quantity: ing.quantity,
-      unit: ing.unit,
-    }));
+    const formatted = (ingredients || []).map((ing) => ({
+    name: ing.name || ing.ingredient || ing.title || "",
+    quantity: ing.quantity ?? ing.amount ?? ing.qty ?? "",
+    unit: ing.unit || ing.measure || "",
+  })).filter(x => x.name);
+
+    if (!formatted.length) {
+    alert("No valid ingredients found in this recipe.");
+    return;
+  }
+
+
 
     try {
-      const res = await fetch("http://localhost:5000/api/use-recipe/", {
+      const res = await fetch(`${API_BASE}/api/use-recipe/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

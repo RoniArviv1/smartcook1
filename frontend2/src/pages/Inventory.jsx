@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/api";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import InventoryList from "../components/inventory/InventoryList";
@@ -21,7 +22,7 @@ export default function Inventory() {
   const loadIngredients = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/inventory/${userId}`);
+      const res = await fetch(`${API_BASE}/api/inventory/${userId}`);
       if (!res.ok) throw new Error(`GET inventory failed: ${res.status}`);
       const data = await res.json();
       setIngredients(data.inventory || []);
@@ -34,7 +35,7 @@ export default function Inventory() {
 
   const handleAddIngredient = async (ingredient) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/inventory/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/inventory/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...ingredient, user_id: userId }),
@@ -50,7 +51,7 @@ export default function Inventory() {
 
   const handleUpdateIngredient = async (id, updates) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/inventory/${userId}/${id}`, {
+      const res = await fetch(`${API_BASE}/api/inventory/${userId}/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -64,7 +65,7 @@ export default function Inventory() {
 
   const handleDeleteIngredient = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/inventory/${userId}/${id}`, {
+      const res = await fetch(`${API_BASE}/api/inventory/${userId}/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);

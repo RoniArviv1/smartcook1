@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/api";
 import React, { useEffect, useState } from "react";
 
 const ALL_SPICES = [
@@ -15,7 +16,7 @@ export default function SpiceSelector({ userId }) {
 
   const fetchUserSpices = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/spices/list?user_id=${userId}`);
+      const res = await fetch(`${API_BASE}/api/spices/list?user_id=${userId}`);
       if (!res.ok) throw new Error("Failed to fetch spices");
       const data = await res.json();
       setSelected(data); // ✅ רק שמות
@@ -26,7 +27,7 @@ export default function SpiceSelector({ userId }) {
 
   const toggleSpice = async (spice) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/spices/toggle`, {
+      const res = await fetch(`${API_BASE}/api/spices/toggle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

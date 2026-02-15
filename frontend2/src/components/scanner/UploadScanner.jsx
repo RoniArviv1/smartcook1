@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/api";
 import React, { useState } from "react";
 
 export default function UploadScanner({ onDetected }) {
@@ -20,7 +21,7 @@ export default function UploadScanner({ onDetected }) {
       setPreview(reader.result);
 
       try {
-        const res = await fetch("http://localhost:5000/api/scan/base64", {
+        const res = await fetch(`${API_BASE}/api/scan/base64`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -33,7 +34,7 @@ export default function UploadScanner({ onDetected }) {
         if (!res.ok) throw new Error(data.error || "שגיאה לא ידועה");
 
         if (!data.barcodes || data.barcodes.length === 0) {
-          setError("לא נמצא ברקוד בתמונה.");
+          setError("No barcode found in the image.");
         } else {
           const barcode = data.barcodes[0].data;
           onDetected(barcode);
@@ -63,7 +64,7 @@ export default function UploadScanner({ onDetected }) {
         </div>
       )}
 
-      {loading && <p className="text-gray-500">🔍 סורק תמונה...</p>}
+      {loading && <p className="text-gray-500">🔍 Image scanner...</p>}
       {error && <p className="text-red-500">{error}</p>}
     </div>
   );

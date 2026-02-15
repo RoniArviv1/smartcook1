@@ -74,7 +74,7 @@ def create_app():
             for user in users:
                 send_expiring_items_email(user.id)
 
-    scheduler.add_job(send_daily_emails, 'cron', hour=12, minute=37)
+    scheduler.add_job(send_daily_emails, 'cron', hour=13, minute=44)
     scheduler.start()
 
     atexit.register(lambda: scheduler.shutdown())

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/api";
 import React, { useEffect, useState } from "react";
 
 export default function NutritionSummary({ userId }) {
@@ -14,7 +15,7 @@ export default function NutritionSummary({ userId }) {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/nutrition/summary?user_id=${userId}&group=${mode}`
+        `${API_BASE}/api/nutrition/summary?user_id=${userId}&group=${mode}`
       );
 
       if (!res.ok) {

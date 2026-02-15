@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/api";
 import React, { useEffect, useState, useRef } from "react";
 import KitchenAssistant from "../components/assistant/KitchenAssistant";
 
@@ -22,10 +23,10 @@ export default function Assistant() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const invRes = await fetch(`http://localhost:5000/api/inventory/${userId}`);
+        const invRes = await fetch(`${API_BASE}/api/inventory/${userId}`);
         const invData = await invRes.json();
 
-        const prefRes = await fetch(`http://localhost:5000/api/preferences/${userId}`);
+        const prefRes = await fetch(`${API_BASE}/api/preferences/${userId}`);
         const prefData = await prefRes.json();
 
         setInventory(invData.inventory || []);
@@ -51,7 +52,7 @@ export default function Assistant() {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/assistant", {
+      const res = await fetch(`${API_BASE}/api/assistant`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

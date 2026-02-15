@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/api";
 import React, { useEffect, useState } from "react";
 import ProfileForm from "../components/profile/ProfileForm";
 
@@ -16,7 +17,7 @@ export default function Profile() {
   const loadProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/profile/${userId}`);
+      const res = await fetch(`${API_BASE}/api/profile/${userId}`);
       if (!res.ok) throw new Error(`GET profile failed: ${res.status}`);
       const data = await res.json();
       setProfile(data);
@@ -37,7 +38,7 @@ export default function Profile() {
     fat_goal: formData.fat_goal !== "" ? parseFloat(formData.fat_goal) : null,
   };
     try {
-      const res = await fetch(`http://localhost:5000/api/profile/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/profile/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

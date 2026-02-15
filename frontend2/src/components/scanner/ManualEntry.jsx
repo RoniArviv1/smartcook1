@@ -11,13 +11,13 @@ export default function ManualEntry({ onDetected }) {
     const cleaned = barcode.trim();
 
     if (!cleaned) {
-      setError("אנא הזן ברקוד תקני");
+      setError("Please enter a valid barcode");
       return;
     }
 
     // אפשר להוסיף ולידציה מתקדמת יותר כאן
     if (!/^\d{8,14}$/.test(cleaned)) {
-      setError("ברקוד צריך להיות מספרי (8–14 ספרות)");
+      setError("Barcode must be numeric (8–14 digits)");
       return;
     }
 
@@ -28,7 +28,7 @@ export default function ManualEntry({ onDetected }) {
     <form onSubmit={handleSubmit} className="space-y-3">
       <input
         type="text"
-        placeholder="הזן את הברקוד ידנית"
+        placeholder="Enter the barcode manually"
         value={barcode}
         onChange={(e) => setBarcode(e.target.value)}
         className="w-full border rounded px-3 py-2 text-sm"
@@ -40,7 +40,7 @@ export default function ManualEntry({ onDetected }) {
         type="submit"
         className="px-4 py-2 bg-blue-600 text-white rounded text-sm"
       >
-        ➕ הוסף לפי ברקוד
+        ➕ Add by barcode
       </button>
     </form>
   );

@@ -8,8 +8,9 @@ from app.utils.unit_normalizer import UNIT_MAP
 def normalize(name: str, qty: float, unit: str) -> tuple[float, str]:
     name = name.lower()
     unit = unit.lower().strip()
-    
-    ingredient_type = classify_ingredient(name)
+
+    # ✅ classify_ingredient מחזיר (category, expiry_required)
+    ingredient_type, _expiry_required = classify_ingredient(name)
 
     # המרה לפי טבלת יחידות
     target_unit, factor = UNIT_MAP.get(unit, (unit, 1))
@@ -22,6 +23,8 @@ def normalize(name: str, qty: float, unit: str) -> tuple[float, str]:
             return qty * avg_weight, "grams"
 
     return qty, target_unit
+
+  
 
 
 def update_inventory_after_recipe(user_id: int, ingredients: list) -> dict:

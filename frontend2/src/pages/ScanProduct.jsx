@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/api";
 import React, { useState } from "react";
 import ScanModal from "../components/inventory/ScanModal";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +13,7 @@ export default function ScanProduct() {
 
   const fetchProductFromServer = async (barcode) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/barcode/product/${barcode}`);
+      const res = await fetch(`${API_BASE}/api/barcode/product/${barcode}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setProduct(data);
@@ -35,7 +36,7 @@ export default function ScanProduct() {
       }
 
       // Base64 image barcode
-      const scanRes = await fetch("http://localhost:5000/api/scan/base64", {
+      const scanRes = await fetch(`${API_BASE}/api/scan/base64`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: barcodeOrBase64 }),

@@ -23,7 +23,7 @@ export default function ScanModal({ isOpen, onClose, onDetected }) {
 
         {/* כותרת */}
         <h2 className="text-lg font-bold text-center mb-4">
-          📦 סריקת ברקוד
+          📦 Barcode scanning
         </h2>
 
         {/* אזור סריקה */}
