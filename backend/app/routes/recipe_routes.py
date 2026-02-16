@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-
+from flask_jwt_extended import jwt_required, get_jwt_identity # אבטחה
 from app.services.recipe_service import get_recommended_recipes
 from app.services.saved_recipe_service import (
     save_recipe,
@@ -9,19 +9,20 @@ from app.services.saved_recipe_service import (
 
 recipe_bp = Blueprint('recipe', __name__)
 
-# 🔸 בקשת המלצות POST עם פרמטרים מותאמים אישית
+# 🔸 בקשת המלצות POST - זיהוי אוטומטי לפי Token
 @recipe_bp.route('/recommended', methods=['POST'])
+@jwt_required()
 def recommended_recipes():
     data = request.get_json() or {}
-    user_id = data.get("user_id")
+    
+    # זיהוי המשתמש מה-Token
+    user_id = get_jwt_identity() 
+    
     user_message = data.get("user_message", "Get me a recipe.")
     user_prefs = data.get("user_prefs", {})
     num_recipes = data.get("num_recipes", 3)
 
-    if not user_id:
-        return jsonify({"error": "Missing user_id"}), 400
-
-    print(f"📥 POST /recommended by user {user_id} | num_recipes={num_recipes}")
+    print(f"📥 POST /recommended by user {user_id}")
 
     result = get_recommended_recipes(
         user_id=user_id,
@@ -31,29 +32,33 @@ def recommended_recipes():
         num_recipes=num_recipes
     )
 
-    print("✅ Result:", result)
-    return jsonify({"recipes": result}), 200  # 🔁 עטוף את הרשימה 
+    return jsonify({"recipes": result}), 200
 
 
-# 🔸 שליפת כל המתכונים השמורים של המשתמש
-@recipe_bp.route('/saved/<int:user_id>', methods=['GET'])
-def get_saved(user_id):
+# 🔸 שליפת מתכונים שמורים - הורדנו את ה-ID מהכתובת
+@recipe_bp.route('/saved', methods=['GET'])
+@jwt_required()
+def get_saved():
+    user_id = get_jwt_identity()
     saved = get_saved_recipes(user_id)
     return jsonify(saved), 200
 
 
-
-# 🔸 שמירת מתכון שנבחר ע"י המשתמש
-@recipe_bp.route('/saved/<int:user_id>', methods=['POST'])
-def save(user_id):
+# 🔸 שמירת מתכון - הורדנו את ה-ID מהכתובת
+@recipe_bp.route('/saved', methods=['POST'])
+@jwt_required()
+def save():
+    user_id = get_jwt_identity()
     data = request.get_json() or {}
     save_recipe(user_id, data)
     return jsonify({"message": "Recipe saved."}), 201
 
 
-# 🔸 מחיקת מתכון שנשמר ע"י המשתמש
-@recipe_bp.route('/saved/<int:user_id>', methods=['DELETE'])
-def unsave(user_id):
+# 🔸 מחיקת מתכון - הורדנו את ה-ID מהכתובת
+@recipe_bp.route('/saved', methods=['DELETE'])
+@jwt_required()
+def unsave():
+    user_id = get_jwt_identity()
     data = request.get_json() or {}
     title = data.get("title")
     if not title:

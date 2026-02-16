@@ -5,9 +5,12 @@ import KitchenAssistant from "../components/assistant/KitchenAssistant";
 /* ----------------------------------------------------------- */
 /*         חילוץ user_id (JWT / localStorage)                  */
 /* ----------------------------------------------------------- */
-const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
-const userId = storedUser.user_id || 1;
-const userName = storedUser.name || "SmartCook User";
+
+const token = localStorage.getItem("token"); // מושך את המפתח ששמרנו ב-Login
+const userName = JSON.parse(localStorage.getItem("smartcookUser") || "{}").username || "User";
+const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+const userId = storedUser.user_id;
+
 
 export default function Assistant() {
   /* ------------------- state ------------------- */
@@ -20,29 +23,35 @@ export default function Assistant() {
 
   /* ------------------- load data ---------------- */
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const invRes = await fetch(`${API_BASE}/api/inventory/${userId}`);
-        const invData = await invRes.json();
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // שימי לב: הורדנו את ה-userId מהכתובת והוספנו Authorization
+      const invRes = await fetch(`${API_BASE}/api/inventory`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const invData = await invRes.json();
 
-        const prefRes = await fetch(`${API_BASE}/api/preferences/${userId}`);
-        const prefData = await prefRes.json();
+      const prefRes = await fetch(`${API_BASE}/api/preferences`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const prefData = await prefRes.json();
 
-        setInventory(invData.inventory || []);
-        setUserPrefs(prefData);
-      } catch (err) {
-        console.error("❌ Error loading data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setInventory(invData.inventory || []);
+      setUserPrefs(prefData);
+    } catch (err) {
+      console.error("❌ Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadData();
+}, [token]);
 
-    loadData();
-  }, []);
 
   /* ------------------- send message -------------- */
   const onSendMessage = async (message) => {
+    const currentToken = localStorage.getItem("token");
     const payload = {
       user_id: userId,
       message,
@@ -54,9 +63,12 @@ export default function Assistant() {
     try {
       const res = await fetch(`${API_BASE}/api/assistant`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${currentToken}` // מוסיפים את המפתח כאן
+    },
+    body: JSON.stringify(payload),
+  });
 
       if (!res.ok) throw new Error(`Assistant failed: ${res.status}`);
       const data = await res.json();

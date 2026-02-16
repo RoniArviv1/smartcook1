@@ -4,8 +4,7 @@ import React, { useEffect, useState } from "react";
 import PreferencesForm from "../components/profile/PreferencesForm";
 
 export default function Preferences() {
-  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
-  const userId = storedUser.user_id || storedUser.id || 1;
+const token = localStorage.getItem("token"); // מושך את המפתח ששמרנו ב-Login
 
   const [preferences, setPreferences] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +14,12 @@ export default function Preferences() {
   }, []);
 
   const loadPreferences = async () => {
+    const currentToken = localStorage.getItem("token");
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/preferences/${userId}`);
+      const res = await fetch(`${API_BASE}/api/preferences`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      })
       if (!res.ok) throw new Error(`GET preferences failed: ${res.status}`);
       const data = await res.json();
       setPreferences(data);
@@ -29,11 +31,15 @@ export default function Preferences() {
   };
 
   const handleSubmit = async (formData) => {
+    const currentToken = localStorage.getItem("token");
     try {
-      const url = `${API_BASE}/api/preferences/${userId}`;
+      const url = `${API_BASE}/api/preferences`;
       const res = await fetch(url, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json" ,
+          "Authorization": `Bearer ${currentToken}` // מוסיפים את המפתח כאן
+        },
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error(`PUT preferences failed: ${res.status}`);

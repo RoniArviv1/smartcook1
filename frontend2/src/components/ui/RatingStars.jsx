@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
 export default function RatingStars({ recipe, userId, onRated }) {
+
+  const token = localStorage.getItem("token");
   /* -------------------------------------------------- */
   /* hash comes from backend; if missing we just hide   */
   /* -------------------------------------------------- */
@@ -35,9 +37,12 @@ export default function RatingStars({ recipe, userId, onRated }) {
     try {
       const res = await fetch(`${API_BASE}/api/recipes/rate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // הוספת המפתח כאן
+        },
         body: JSON.stringify({
-          user_id: userId,
+          // user_id: userId, // השרת כבר ידע מי את מהטוקן
           rating: value,
           recipe: { ...recipe, recipe_hash: recipeHash },
         }),

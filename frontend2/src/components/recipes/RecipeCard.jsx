@@ -13,7 +13,13 @@ import {
 import { fetchImage } from "../../utils/fetchImage";
 import RatingStars from "../ui/RatingStars";
 
-export default function RecipeCard({ recipe, showRating = true, userId }) {
+export default function RecipeCard({ recipe, showRating = true }) {
+
+  const token = localStorage.getItem("token");
+  // תוסיפי את זה בראש הקובץ, וכל ה-userId למטה יהיו נכונים אוטומטית
+const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+const userId = storedUser.user_id; 
+
   /* -------------------- local state -------------------- */
   const [fallbackImage, setFallbackImage] = useState(null);
   const [expanded, setExpanded] = useState(false);
@@ -69,10 +75,13 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
     try {
       console.log("🔍 recipe being saved:", recipe);
       const res = await fetch(
-        `${API_BASE}/api/recipes/saved/${userId}`,
+        `${API_BASE}/api/recipes/saved`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json" ,
+            "Authorization": `Bearer ${token}` // מוסיפים את המפתח כאן
+    },
           body: JSON.stringify(recipe),
         }
       );
@@ -83,31 +92,28 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
   };
 
   /* -------------- update inventory (use recipe) --------- */
-  const handleUseRecipe = async () => {
-    if (!userId || !Array.isArray(ingredients)) {
-      alert("Missing user or ingredients");
+    const handleUseRecipe = async () => {
+    // הורדנו את הבדיקה של userId כי השרת יזהה אותנו לפי ה-Token
+    if (!Array.isArray(ingredients)) {
+      alert("Missing ingredients");
       return;
     }
 
     const formatted = (ingredients || []).map((ing) => ({
-    name: ing.name || ing.ingredient || ing.title || "",
-    quantity: ing.quantity ?? ing.amount ?? ing.qty ?? "",
-    unit: ing.unit || ing.measure || "",
-  })).filter(x => x.name);
-
-    if (!formatted.length) {
-    alert("No valid ingredients found in this recipe.");
-    return;
-  }
-
-
+      name: ing.name || ing.ingredient || ing.title || "",
+      quantity: ing.quantity ?? ing.amount ?? ing.qty ?? "",
+      unit: ing.unit || ing.measure || "",
+    })).filter(x => x.name);
 
     try {
-      const res = await fetch(`${API_BASE}/api/use-recipe/`, {
+      // 1. הורדנו את הלוכסן המיותר בסוף הכתובת
+      const res = await fetch(`${API_BASE}/api/use-recipe`, { 
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // 2. הוספת המפתח
+        },
         body: JSON.stringify({
-          user_id: userId,
           recipe_hash,
           title,
           ingredients: formatted,
@@ -118,16 +124,15 @@ export default function RecipeCard({ recipe, showRating = true, userId }) {
       const data = await res.json();
       if (res.ok) {
         alert("✅ Inventory updated!");
-        console.log("📦 Updated items:", data.updated_items);
       } else {
         alert("❌ Inventory update failed");
-        console.error("🔴 Error:", data);
       }
     } catch (err) {
       console.error("⚠️ Network error:", err);
       alert("⚠️ Request error");
     }
   };
+
 
   if (!recipe) return null;
 

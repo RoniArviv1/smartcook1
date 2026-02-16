@@ -15,6 +15,8 @@ import ChatMessage from "./ChatMessage";                 // הודעה בצ'אט
 import SuggestedRecipes from "./SuggestedRecipes";       // תצוגת מתכונים
 import { Link } from "react-router-dom";                 // קישורים פנימיים באפליקציה
 
+const token = localStorage.getItem("token");
+
 // הגדרות עבור סוגי התאמות שהמשתמש יכול לבחור
 const MULTI_OPTS   = ["Lower calories", "Faster to make"];       // אפשרויות מרובות – ניתן לבחור יותר מאחת
 const INSTANT_OPTS = ["Show me another recipe", "Surprise me"];  // כפתורים של בקשה מיידית
@@ -79,11 +81,14 @@ export default function KitchenAssistant({
   const [mealType, setMealType] = useState(null);             // בוקר / צהריים / ערב (משפיע על המלצה)
 // 📡 שליפת מתכונים שמורים מהשרת בעת טעינת הקומפוננטה (או שינוי userId)
 useEffect(() => {
-  fetch(`${API_BASE}/api/recipes/saved/${userId}`)  // מבצע קריאה לשרת לפי מזהה המשתמש
+  if (!token) return;
+  fetch(`${API_BASE}/api/recipes/saved`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })  // מבצע קריאה לשרת לפי מזהה המשתמש
     .then(res => res.json())              // ממיר את התגובה ל־JSON
     .then(setSavedRecipes)                // שומר את המתכונים בסטייט
     .catch(console.error);                // במקרה של שגיאה – מציג בקונסול
-}, [userId]);  // תלוי ב־userId – רץ שוב רק אם המשתמש מתחלף
+}, [token]);  // תלוי ב־userId – רץ שוב רק אם המשתמש מתחלף
 
 // 🔽 גלילה אוטומטית לתחתית הצ'אט בכל פעם שההודעות משתנות
 useEffect(() => {
@@ -264,9 +269,12 @@ const toggleItem = (name, list, setter) =>
 // 💾 שמירת מתכון לשרת דרך POST
 const saveRecipe = async (r) => {
   try {
-    const res = await fetch(`${API_BASE}/api/recipes/saved/${userId}`, {
+    const res = await fetch(`${API_BASE}/api/recipes/saved`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json" ,
+        "Authorization": `Bearer ${token}` // מוסיפים את המפתח כאן
+    },
       body: JSON.stringify(r),  // שולח את כל המתכון כ־JSON
     });
     if (res.ok) {
@@ -283,9 +291,12 @@ const saveRecipe = async (r) => {
 // 🗑️ מחיקת מתכון מהשרת ומהסטייט (DELETE)
 const deleteRecipe = async (title) => {
   try {
-    const res = await fetch(`${API_BASE}/api/recipes/saved/${userId}`, {
+    const res = await fetch(`${API_BASE}/api/recipes/saved`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+         "Content-Type": "application/json" ,
+         "Authorization": `Bearer ${token}` // מוסיפים את המפתח כאן
+    },
       body: JSON.stringify({ title }),  // שולח רק את שם המתכון למחיקה
     });
     if (res.ok) {

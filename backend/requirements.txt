@@ -1,9 +1,0 @@
-flask
-flask_sqlalchemy
-flask_migrate
-flask_jwt_extended
-psycopg2-binary
-passlib
-python-dotenv
-pandas
-scikit-learn

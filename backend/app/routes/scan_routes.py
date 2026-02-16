@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required # הוספת הגנה לכל נתיב
 from pyzbar.pyzbar import decode
 from PIL import Image
 import base64
@@ -6,8 +7,8 @@ import io
 
 scan_bp = Blueprint('scan', __name__)
 
-
 @scan_bp.route("/api/scan/base64", methods=["POST"])
+@jwt_required() # רק משתמש עם Token יכול לסרוק
 def scan_image_file():
     """
     סריקה מתמונה שהועלתה כקובץ (multipart/form-data)
@@ -26,12 +27,12 @@ def scan_image_file():
         barcodes = [obj.data.decode("utf-8") for obj in decoded]
         return jsonify({"barcodes": barcodes})
 
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @scan_bp.route('/scan/base64', methods=['POST'])
+@jwt_required() # רק משתמש עם Token יכול לסרוק
 def scan_base64_image():
     """
     סריקה מתמונה שהועלתה כ־Base64 (בפורמט JSON)

@@ -1,10 +1,12 @@
 # app/routes/ingredient_routes.py
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required # הוספת הגנה
 from app.utils.ingredient_utils import get_allowed_units
 
 ingredient_bp = Blueprint("ingredient", __name__)
 
 @ingredient_bp.route("/units", methods=["GET"])
+@jwt_required() # רק משתמש מחובר יכול לקבל את המידע הזה
 def get_units_for_ingredient():
     name = request.args.get("name", "").strip().lower()
 

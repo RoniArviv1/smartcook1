@@ -1,7 +1,8 @@
 import { API_BASE } from "../../utils/api";
 import React, { useEffect, useState } from "react";
 
-export default function NutritionSummary({ userId }) {
+export default function NutritionSummary({ }) {
+  const token = localStorage.getItem("token");
   const [summary, setSummary] = useState(null);
   const [goals, setGoals] = useState({});
   const [loading, setLoading] = useState(true);
@@ -14,8 +15,13 @@ export default function NutritionSummary({ userId }) {
   const loadSummary = async () => {
     setLoading(true);
     try {
+      // 1. הורדנו את ה-user_id מהכתובת
       const res = await fetch(
-        `${API_BASE}/api/nutrition/summary?user_id=${userId}&group=${mode}`
+        `${API_BASE}/api/nutrition/summary?group=${mode}`, 
+        {
+          // 2. הוספנו את ה-Authorization Header
+          headers: { 'Authorization': `Bearer ${token}` } 
+        }
       );
 
       if (!res.ok) {

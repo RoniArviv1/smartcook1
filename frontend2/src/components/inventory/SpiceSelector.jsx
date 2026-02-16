@@ -7,7 +7,8 @@ const ALL_SPICES = [
   "Cinnamon", "Chili Flakes", "Thyme", "Rosemary", "Curry Powder"
 ];
 
-export default function SpiceSelector({ userId }) {
+export default function SpiceSelector({ }) {
+  const token = localStorage.getItem("token");
   const [selected, setSelected] = useState([]);
 
   useEffect(() => {
@@ -15,8 +16,11 @@ export default function SpiceSelector({ userId }) {
   }, []);
 
   const fetchUserSpices = async () => {
+    const currentToken = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE}/api/spices/list?user_id=${userId}`);
+      const res = await fetch(`${API_BASE}/api/spices/list`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` } // הוספת המפתח
+      });
       if (!res.ok) throw new Error("Failed to fetch spices");
       const data = await res.json();
       setSelected(data); // ✅ רק שמות
@@ -26,12 +30,15 @@ export default function SpiceSelector({ userId }) {
   };
 
   const toggleSpice = async (spice) => {
+    const currentToken = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_BASE}/api/spices/toggle`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json" ,
+          "Authorization": `Bearer ${currentToken}` // מוסיפים את המפתח כאן
+    },
         body: JSON.stringify({
-          user_id: userId,
           spice_name: spice,
         }),
       });

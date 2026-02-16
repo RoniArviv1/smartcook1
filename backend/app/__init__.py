@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from app.extensions import db, migrate, jwt
 import os
@@ -6,6 +6,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 from app.services.notification_service import send_expiring_items_email
 from app.models import User
+from datetime import timedelta  # <--- השורה החסרה
+
 
 # Blueprint imports
 from app.routes.rating_routes import rating_bp
@@ -25,30 +27,42 @@ from app.routes.nutrition_routes    import nutrition_bp
 
 def create_app():
     app = Flask(__name__)
+    app.url_map.strict_slashes = False
+
+    # --- הגדרות ה-JWT החדשות ---
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30) # טוקן ל-30 יום
+    
+  
+    app.config['JWT_TOKEN_LOCATION'] = ['headers']
+    app.config['JWT_HEADER_NAME'] = 'Authorization'
+    app.config['JWT_HEADER_TYPE'] = 'Bearer'
+    # ---------------------------
+    app.config['JWT_TOKEN_LOCATION'] = ['headers']
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # <--- חשוב מאוד
+    app.config['JWT_CSRF_CHECK_FORM'] = False    
 
     # Base config
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:0504903322Rr@localhost:5432/smartcookdb')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')
 
-    # ✅ CORS config
     CORS(app, resources={r"/api/*": {
-        "origins": [
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:3002"
-        ],
+        "origins": ["https://your-app-name.vercel.app", "https://your-domain.com"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
+        "allow_headers": ["Content-Type", "Authorization"]
     }})
+
+
     print("✅ CORS configuration loaded!")
 
     # Init extensions
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+
+
+  
+
 
     # Register Blueprints
     app.register_blueprint(assistant_bp,    url_prefix='/api')

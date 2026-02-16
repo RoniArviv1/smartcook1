@@ -4,6 +4,9 @@ import ScanModal from "../components/inventory/ScanModal";
 import { useNavigate } from "react-router-dom";
 
 export default function ScanProduct() {
+
+  const token = localStorage.getItem("token");
+
   const [showModal, setShowModal] = useState(false);
   const [product, setProduct] = useState(null);
   const [scannedBarcode, setScannedBarcode] = useState("");
@@ -12,8 +15,11 @@ export default function ScanProduct() {
   const navigate = useNavigate();
 
   const fetchProductFromServer = async (barcode) => {
+    const currentToken = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE}/api/barcode/product/${barcode}`);
+      const res = await fetch(`${API_BASE}/api/barcode/product/${barcode}`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` } // הוספת המפתח
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setProduct(data);
@@ -23,6 +29,7 @@ export default function ScanProduct() {
   };
 
   const handleBarcodeDetected = async (barcodeOrBase64) => {
+    const currentToken = localStorage.getItem("token");
     setLoading(true);
     setError(null);
     setProduct(null);
@@ -38,9 +45,13 @@ export default function ScanProduct() {
       // Base64 image barcode
       const scanRes = await fetch(`${API_BASE}/api/scan/base64`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${currentToken}` // הוספת המפתח
+        },
         body: JSON.stringify({ image: barcodeOrBase64 }),
       });
+
 
       const scanData = await scanRes.json();
       if (!scanRes.ok) throw new Error(scanData.error || "Barcode not recognized");

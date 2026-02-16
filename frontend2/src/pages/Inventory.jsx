@@ -12,17 +12,21 @@ export default function Inventory() {
 
   const navigate = useNavigate();
 
-  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}") || {};
-  const userId = storedUser.user_id || storedUser.id || 1;
+  
+  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
+  const userId = storedUser.user_id;
 
   useEffect(() => {
     loadIngredients();
   }, []);
 
   const loadIngredients = async () => {
+    const currentToken = localStorage.getItem("token");
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/inventory/${userId}`);
+      const res = await fetch(`${API_BASE}/api/inventory`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      })
       if (!res.ok) throw new Error(`GET inventory failed: ${res.status}`);
       const data = await res.json();
       setIngredients(data.inventory || []);
@@ -34,11 +38,15 @@ export default function Inventory() {
   };
 
   const handleAddIngredient = async (ingredient) => {
+    const currentToken = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE}/api/inventory/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/inventory`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...ingredient, user_id: userId }),
+        headers: { 
+          "Content-Type": "application/json" ,
+           "Authorization": `Bearer ${currentToken}` // מוסיפים את המפתח כאן
+        },
+        body: JSON.stringify(ingredient),
       });
 
       if (!res.ok) throw new Error(`POST failed: ${res.status}`);
@@ -50,10 +58,14 @@ export default function Inventory() {
   };
 
   const handleUpdateIngredient = async (id, updates) => {
+    const currentToken = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE}/api/inventory/${userId}/${id}`, {
+      const res = await fetch(`${API_BASE}/api/inventory/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json" ,
+           "Authorization": `Bearer ${currentToken}` // מוסיפים את המפתח כאן
+        },
         body: JSON.stringify(updates),
       });
       if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
@@ -64,9 +76,13 @@ export default function Inventory() {
   };
 
   const handleDeleteIngredient = async (id) => {
+    const currentToken = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE}/api/inventory/${userId}/${id}`, {
+      const res = await fetch(`${API_BASE}/api/inventory/${id}`, {
         method: "DELETE",
+        headers: { 
+      "Authorization": `Bearer ${currentToken}` // מוסיפים את המפתח כאן
+    },
       });
       if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
       loadIngredients();

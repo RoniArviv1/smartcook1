@@ -4,8 +4,8 @@ import ProfileForm from "../components/profile/ProfileForm";
 
 export default function Profile() {
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const storedUser = JSON.parse(localStorage.getItem("smartcookUser") || "{}");
-  const userId = storedUser.user_id || storedUser.id || 1;
+  
+  const token = localStorage.getItem("token"); // מושך את המפתח ששמרנו ב-Login
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,9 @@ export default function Profile() {
   const loadProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/profile/${userId}`);
+      const res = await fetch(`${API_BASE}/api/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       if (!res.ok) throw new Error(`GET profile failed: ${res.status}`);
       const data = await res.json();
       setProfile(data);
@@ -38,10 +40,13 @@ export default function Profile() {
     fat_goal: formData.fat_goal !== "" ? parseFloat(formData.fat_goal) : null,
   };
     try {
-      const res = await fetch(`${API_BASE}/api/profile/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/profile`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        headers: { 
+          "Content-Type": "application/json" ,
+          "Authorization": `Bearer ${token}` // מוסיפים את המפתח כאן
+        },
+        body: JSON.stringify(parsedData),
       });
       if (!res.ok) throw new Error(`PUT profile failed: ${res.status}`);
 

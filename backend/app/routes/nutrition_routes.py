@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity # אבטחה
 from app.models import NutritionLog, User
 from sqlalchemy import func
 from datetime import datetime, timedelta
@@ -6,13 +7,13 @@ from datetime import datetime, timedelta
 nutrition_bp = Blueprint("nutrition", __name__)
 
 @nutrition_bp.route("/summary", methods=["GET"])
+@jwt_required() # מחייב התחברות
 def get_nutrition_summary():
-    user_id = request.args.get("user_id", type=int)
+    # זיהוי המשתמש מה-Token במקום מה-URL
+    user_id = get_jwt_identity() 
+    
     days = request.args.get("days", 7, type=int)
     group_mode = request.args.get("group", "daily")  # daily / weekly
-
-    if not user_id:
-        return jsonify({"error": "Missing user_id"}), 400
 
     start_date = datetime.utcnow().date() - timedelta(days=days)
 
@@ -22,7 +23,7 @@ def get_nutrition_summary():
         .filter(NutritionLog.date >= start_date)
     )
 
-    # שליפת יעדים תזונתיים מהמשתמש
+    # שליפת יעדים תזונתיים מהמשתמש המזוהה
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -81,7 +82,7 @@ def get_nutrition_summary():
 
         daily_summary = [
             {
-                "date": log.date.isoformat(),
+                "date": log.date.isoformat() if hasattr(log.date, 'isoformat') else str(log.date),
                 "calories": round(log.calories or 0, 2),
                 "protein": round(log.protein or 0, 2),
                 "carbs": round(log.carbs or 0, 2),

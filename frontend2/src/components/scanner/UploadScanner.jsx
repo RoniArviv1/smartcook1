@@ -2,6 +2,8 @@ import { API_BASE } from "../../utils/api";
 import React, { useState } from "react";
 
 export default function UploadScanner({ onDetected }) {
+  const token = localStorage.getItem("token");
+
   const [error, setError] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -25,9 +27,11 @@ export default function UploadScanner({ onDetected }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // הוספת המפתח כאן
           },
           body: JSON.stringify({ image: base64String }),
         });
+
 
         const data = await res.json();
 

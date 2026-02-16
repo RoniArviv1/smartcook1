@@ -28,7 +28,7 @@ def login():
     if not user:
         return jsonify({"error": "Incorrect username or password"}), 200
 
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
     return jsonify({
         "access_token": token,
         "user_id": user.id,

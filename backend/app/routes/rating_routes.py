@@ -1,26 +1,25 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity # הוספת אבטחה
 from app.services.rating_service import rate_recipe
 from app.models import RecipeRating
-
+from sqlalchemy import func
 
 rating_bp = Blueprint("rating_bp", __name__)
 
-# app/routes/rating_routes.py
-
-@rating_bp.route("/debug/ratings/<int:user_id>")
-def debug_ratings(user_id):
-    from app.models import RecipeRating
+# נתיב דיבאג מאובטח - מזהה את המשתמש לפי הטוקן שלו
+@rating_bp.route("/debug/ratings")
+@jwt_required()
+def debug_ratings():
+    user_id = get_jwt_identity()
     data = [
         {"title": r.title, "rating": r.rating}
         for r in RecipeRating.query.filter_by(user_id=user_id).all()
     ]
     return jsonify(data)
 
+# נתיב לקבלת ממוצע דירוגים - נשאר ציבורי (לא חייב טוקן כדי לראות ציון)
 @rating_bp.route("/recipes/rating/<recipe_hash>", methods=["GET"])
 def get_average_rating(recipe_hash):
-    from app.models import RecipeRating
-    from sqlalchemy import func
-
     ratings = RecipeRating.query.with_entities(
         func.avg(RecipeRating.rating), func.count()
     ).filter_by(recipe_hash=recipe_hash).first()
@@ -34,26 +33,19 @@ def get_average_rating(recipe_hash):
         "num_ratings": count
     })
 
-
+# דירוג מתכון - מאובטח עם טוקן
 @rating_bp.route("/recipes/rate", methods=["POST"])
+@jwt_required()
 def rate_recipe_api():
-    """
-    מקבל דירוג מ־Frontend עבור מתכון מוצע.
-    גוף הבקשה חייב לכלול:
-    {
-        "user_id": int,
-        "rating": int (1–5),
-        "recipe": {title, ingredients, instructions, ...}
-    }
-    """
     data = request.get_json()
 
-    user_id = data.get("user_id")
+    # זיהוי המשתמש מהטוקן
+    user_id = get_jwt_identity()
     rating = data.get("rating")
     recipe = data.get("recipe")
 
-    if not user_id or not recipe or not isinstance(rating, int):
-        return jsonify({"error": "Missing user_id, rating, or recipe"}), 400
+    if not recipe or not isinstance(rating, int):
+        return jsonify({"error": "Missing rating or recipe"}), 400
     if not (1 <= rating <= 5):
         return jsonify({"error": "Rating must be between 1 and 5"}), 400
 
